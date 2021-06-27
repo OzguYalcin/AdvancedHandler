@@ -1,0 +1,17 @@
+{
+    "BOT_OWNERS_ONLY": "Only the bot owner can run this command.",
+    "GUILD_ONLY_COMMAND": "This command can only be used within a server.",
+    "SOMETHINK_WENT_WRONG": "Something went wrong and this was reported to the authorities.",
+    "TEST_ONLY": "This command can only be used on test servers.",
+    "MISSING_PERMISSION": "You must have the {PERM} permission in order to use this command.",
+    "NO_DATABASE_FOUND": "No database connection found!",
+    "SET_PREFIX": "Set the command prefix to {PREFIX}.",
+    "SYNTAX_ERROR": "Incorrect usage! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\"",
+    "UNKOWN_COMMAND": "Could not find command {COMMAND}!",
+    "ADDED_REQUIRED_ROLE": "Added role {ROLE} to command {COMMAND}.",
+    "REMOVED_REQUIRED_ROLE": "Removed role {ROLE} to command {COMMAND}.",
+    "REQUIRED_ROLE_ALREADY_ADDED": "{ROLE} already added to command {COMMAND}",
+    "REQUIRED_ROLE_ALREADY_REMOVED": "{ROLE} already removed to command {COMMAND}",
+    "MISSING_ROLES": "You do not have the required roles to use this command! You need one of the following: {ROLES}",
+    "COOLDOWN": "You must wait {COOLDOWN} before using that command again."
+}
