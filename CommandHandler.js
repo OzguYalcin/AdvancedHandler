@@ -263,7 +263,7 @@ CommandHandler.prototype.registerCommand = (filePath, fileName, instance, disabl
     if (!command.category) missing.push("Category");
 
     if (!command.description) missing.push("Description");
-    if (missing.length >= 1 && instance.showWarns) console.warn("AdvancedHandler > Command \"" + commandName + "\" does not have the following properties: " + missing + ".");
+    //if (missing.length >= 1 && instance.showWarns) console.warn("AdvancedHandler > Command \"" + commandName + "\" does not have the following properties: " + missing + ".");
 
     if (command.testOnly && !instance.testServers) console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"testOnly\" set to true, but no test servers are defined.")
 
