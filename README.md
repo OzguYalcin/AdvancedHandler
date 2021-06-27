@@ -1,6 +1,14 @@
 # Advanced Handler
 Advanced DiscordJS Command &amp; Feature Handler. This Command Handler is made for discord bot developers and makes botting easy.
 
+# Installation
+
+## NPM 
+
+```
+npm install advancedhandler
+```
+
 ## How we use this Advanced Handler in main file
 
 ```js
