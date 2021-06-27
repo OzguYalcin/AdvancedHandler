@@ -16,7 +16,7 @@ const DiscordJS = require('discord.js');
 
 const client = new DiscordJS.Client();
 
-const AdvancedHandler = require('./AdvancedHandler/index.js');
+const AdvancedHandler = require('advancedhandler');
 
 new AdvancedHandler(client, {
     commandsDir: 'commands', //Must be string, this is specified our commands directory.
