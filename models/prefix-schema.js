@@ -8,7 +8,10 @@ const reqString = {
 const Schema = new mongoose.Schema({
     //Guild ID
     _id: reqString,
-    prefix: reqString,
+    prefix: {
+        type: String,
+        required: true
+    },
     
 })
 

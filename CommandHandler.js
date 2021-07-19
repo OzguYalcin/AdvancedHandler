@@ -6,9 +6,11 @@ const permissions = require('./permissions');
 const mongoose = require('mongoose');
 const mongo = require('./mongo');
 const ms = require('ms');
+const registerCommand = require('./registerCommand');
 /**
 * @param {any} client
-* @param {Object} options
+* @param {object} options
+* @returns
 */
 
 class CommandHandler {
@@ -16,7 +18,6 @@ class CommandHandler {
     constructor(client, options) {
         if (!client) throw new TypeError(`AdvancedHandler > No client specified`);
         if (!options.commandsDir) options.commandsDir = 'commands', console.warn(`AdvancedHandler > No commands directory specified. Using "commands".`);
-        if (!options.defaultPrefix) options.defaultPrefix = '!', console.warn(`AdvancedHandler > No prefix specified. Using "!".`);
         if (!options.mongoURI) console.warn(`AdvancedHandler > No mongoURI specified. Some features don't work!`);
         this.client = client;
         this.commandsDir = options.commandsDir;
@@ -30,10 +31,17 @@ class CommandHandler {
         this.messagesPath = options.messagesPath || path.join(__dirname, 'messagesPath.json');
         this.dbOptions = options.dbOptions;
         this.commands = new DiscordJS.Collection();
+        //this.categories = new DiscordJS.Collection();
+        //this.hiddenCategories = new DiscordJS.Collection();
+        //this.categorySettings = options.categorySettings;
+
+        //this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
+        //this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
+
+        mongo(this.getDBConnectURI(), this.dbOptions);
+        //this.setCategory(this.categorySettings, this);
 
         if (fs.existsSync(this.commandsDir)) {
-
-            if (this.mongoURI) mongo(this.mongoURI, this.dbOptions);
 
             var files = getAllFiles(this.commandsDir);
             var amount = files.length;
@@ -47,17 +55,20 @@ class CommandHandler {
                 const C = file.split("\\")[0];
                 const Path = file.split("\\")[1];
                 file = `${C}\\${Path}\\${_d[0]}`
-                this.registerCommand(file, fileName, this, this.disableCommands);
+                registerCommand(file, fileName, this, this.disableCommands);
             }
 
             const defaultFiles = getAllFiles(path.join(__dirname, 'commands'));
 
             for (let i = 0; i < defaultFiles.length; i++) {
-                this.registerCommand(defaultFiles[i][0], defaultFiles[i][1], this, this.disableCommands);
-            }
 
+                if (this.disableCommands && this.disableCommands.includes(defaultFiles[i][1])) continue;
+
+                registerCommand(defaultFiles[i][0], defaultFiles[i][1], this, this.disableCommands);
+            }
             client.on('message', async message => {
-                let prefix = message.guild ? await this.getPrefix(message.guild, this) : this.defaultPrefix;
+                let prefix = message.guild ? await this.getPrefix(message.guild) : this.defaultPrefix;
+                this.prefix = prefix;
                 if (!message.content.startsWith(prefix)) return;
 
                 let content = message.content;
@@ -66,24 +77,20 @@ class CommandHandler {
 
                 let firstElement = args.shift().toLocaleLowerCase();
 
-                let isCmdHas = this.isCommandHas(firstElement, this)
+                let isCmdHas = this.isCommandHas(firstElement)
 
 
 
                 if (!isCmdHas) return;
 
-                firstElement = isCmdHas[1]
-
-                const command = this.commands.get(firstElement);
-
-
+                const command = this.getCommand(firstElement);
                 if (command.guildOnly && !message.guild) {
-                    return message.reply(this.getMessage(this, "GUILD_ONLY_COMMAND"));
+                    return message.reply(this.getMessage("GUILD_ONLY_COMMAND"));
                 }
                 if (message.guild) {
                     if (command.testOnly && !this.testServers && this.showWarns) {
                         console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"testOnly\" set to true, but no test servers are defined.")
-                        return message.reply(this.getMessage(this, "SOMETHINK_WENT_WRONG"));
+                        return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
                     } else if (command.testOnly && typeof this.testServers === 'object') {
                         let isGuildTest = false;
 
@@ -92,16 +99,16 @@ class CommandHandler {
                         })
 
                         if (isGuildTest === false) {
-                            return message.reply(this.getMessage(this, "TEST_ONLY"));
+                            return message.reply(this.getMessage("TEST_ONLY"));
                         }
                     }
                 } else if (!message.guild && command.testOnly && typeof this.testServers === 'string') {
-                    return message.reply(this.getMessage(this, "TEST_ONLY"));
+                    return message.reply(this.getMessage("TEST_ONLY"));
                 }
 
                 if (command.ownersOnly && !this.botOwners && this.showWarns) {
                     console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"ownersOnly\" set to true, but no owners are defined.")
-                    return message.reply(this.getMessage(this, "SOMETHINK_WENT_WRONG"));
+                    return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
                 } else if (command.testOnly && typeof this.botOwners === 'object') {
                     let isOwner = false;
 
@@ -109,10 +116,33 @@ class CommandHandler {
                         if (item === message.author.id) isOwner = true;
                     })
                     if (isOwner === false) {
-                        return message.reply(this.getMessage(this, "BOT_OWNERS_ONLY"));
+                        return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
                     }
                 } else if (command.ownersOnly && typeof this.botOwners === 'string' && this.botOwners !== message.author.id) {
-                    return message.reply(this.getMessage(this, "BOT_OWNERS_ONLY"));
+                    return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
+                }
+                if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+                    const reqRolesSchema = require('./models/required-roles-schema');
+                    const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: firstElement }, { guildID: message.guild.id, command: firstElement }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                    let roleResult = [];
+                    if (reqRoles.requiredRoles) {
+                        if (typeof reqRoles.requiredRoles === 'object') {
+
+                            for (let i = 0; i < reqRoles.requiredRoles.length; i++) {
+                                const role = reqRoles.requiredRoles[i];
+
+                                if (!message.member.roles.cache.has(role)) {
+                                    roleResult = [role, true]
+                                }
+                            }
+                        }
+                    }
+                    if (roleResult.length !== 0) {
+                        let text = this.getMessage("MISSING_ROLES")
+                            .replace("{ROLES}", roleResult[0])
+
+                        return message.reply(text)
+                    }
                 }
 
                 const permissions = command.requiredPermissions || command.permissions;
@@ -132,29 +162,31 @@ class CommandHandler {
                         }
                     }
                 if (permResult.length !== 0) {
-                    let text = this.getMessage(this, "MISSING_PERMISSION")
+                    let text = this.getMessage("MISSING_PERMISSION")
                         .replace("{PERM}", permResult[0])
 
                     return message.reply(text)
                 }
-                const reqRolesSchema = require('./models/required-roles-schema');
-                const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: firstElement }, { guildID: message.guild.id, command: firstElement }, { upsert: true, new: true, setDefaultsOnInsert: true });
-                let roleResult = [];
-                if (reqRoles.requiredRoles) {
-                    if (typeof reqRoles.requiredRoles === 'object') {
 
-                        for (let i = 0; i < reqRoles.requiredRoles.length; i++) {
-                            const role = reqRoles.requiredRoles[i];
+                const requiredBotPermissions = command.requiredBotPermissions;
+                let permBotResult = [];
+                if (requiredBotPermissions && typeof requiredBotPermissions === 'object') {
+                    for (let i = 0; i < requiredBotPermissions.length; i++) {
+                        const perm = requiredBotPermissions[i];
 
-                            if (!message.member.roles.cache.has(role)) {
-                                roleResult = [role, true]
-                            }
+                        if (!message.guild.me.hasPermission(perm)) {
+                            permBotResult = [perm, true]
                         }
                     }
-                }
-                if (roleResult.length !== 0) {
-                    let text = this.getMessage(this, "MISSING_ROLES")
-                        .replace("{ROLES}", roleResult[0])
+                } else
+                    if (requiredBotPermissions && typeof requiredBotPermissions === 'string') {
+                        if (!message.guild.me.hasPermission(requiredBotPermissions)) {
+                            permBotResult = [requiredBotPermissions, true]
+                        }
+                    }
+                if (permBotResult.length !== 0) {
+                    let text = this.getMessage("MISSING_BOT_PERMISSION")
+                        .replace("{PERM}", permBotResult[0])
 
                     return message.reply(text)
                 }
@@ -170,9 +202,9 @@ class CommandHandler {
 
                 }
 
-                if (typeof minArgs === 'number' && typeof maxArgs === 'number' && typeof expectedArgs === 'string') {
+                if (expectedArgs) {
                     if (args.length < minArgs || args.length > maxArgs) {
-                        const text = this.newSytnaxError(prefix, firstElement, expectedArgs, this);
+                        const text = this.newSyntaxError(firstElement, expectedArgs);
                         return message.reply(text)
                     }
                 }
@@ -182,12 +214,12 @@ class CommandHandler {
 
                 const cooldownSchema = require('./models/cooldown');
 
-                if (commandCooldown) {
+                if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2 && commandCooldown) {
                     let cooldownFinishTime = await cooldownSchema.findOne({ _id: `${message.guild.id}-${message.author.id}`, name: firstElement });
 
                     if (cooldownFinishTime) {
                         if (cooldownFinishTime.cooldown > now) {
-                            return message.reply(this.getMessage(this, "COOLDOWN").replace(/{COOLDOWN}/g, this.getLeftTime(cooldownFinishTime.cooldown, Date.now())))
+                            return message.reply(this.getMessage("COOLDOWN").replace(/{COOLDOWN}/g, getLeftTime(cooldownFinishTime.cooldown, Date.now())))
                         } else {
                             await cooldownSchema.findOneAndUpdate({
                                 _id: `${message.guild.id}-${message.author.id}`,
@@ -213,145 +245,287 @@ class CommandHandler {
                     console.log(e);
                 }
             })
+
         } else throw new ('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
     }
-}
+    /**
+     * 
+     * @param {string} prefix 
+     * @returns 
+     */
+    setDefaultPrefix(prefix) {
+        if (typeof prefix !== 'string') throw new Error('Prefix must be string!');
+        this.defaultPrefix = prefix;
 
+        return this;
+    }
+    /**
+     * 
+     * @param {string} dir 
+     * @returns 
+     */
+    setCommandsDir(dir) {
+        if (typeof dir !== 'string') throw new Error('Directory must be string!');
 
-CommandHandler.prototype.registerCommand = (filePath, fileName, instance, disableCommands) => {
+        this.commandsDir = dir;
 
-    const command = require(filePath);
+        return this
+    }
+    /**
+     * 
+     * @param {string} uri 
+     * @returns 
+     */
+    setMongoURI(uri) {
+        if (typeof uri !== 'string') throw new Error('mongoDB uri must be string!');
 
-    let commandName = command.name || fileName;
+        this.mongoURI = uri;
 
-    let callbackCounter = 0;
-    const defaultCommand = ["prefix", "enable", "disable", "requiredrole"];
-    if (disableCommands.includes(commandName) && !defaultCommand.includes(commandName)) return;
-    if (command.callback) callbackCounter++
-    if (command.execute) callbackCounter++
-    if (command.run) callbackCounter++
+        return this;
+    }
+    /*setCategory(Categories) {
+        if (!typeof Categories === 'object') throw new Error('First parametre must be an Array!');
 
-    if (callbackCounter === 0) throw new TypeError('Commands must have "callback", "execute" or "run" functions, but not multiple.');
+        for (let i = 0; i < Categories.length; i++) {
+            let category = Categories[i];
 
-    if (callbackCounter > 1) throw new TypeError('Commands can have "callback", "execute", or "run" functions, but not multiple.');
+            if (!category.name) throw new TypeError("Name is required for categories!");
 
-    if (!command.name && instance.showWarns) {
-        console.warn("AdvancedHandler > \"" + filePath + "\" Command have no name. Name set to \"" + fileName + "\".")
-    };
+            if (!category.emoji) throw new TypeError("Emoji is required for categories!");
 
+            if (this.isEmojiUsed(category.emoji)) throw new TypeError("\"" + category.emoji + "\"" + " emoji is already used!");
 
+            if (!category.custom) category.custom = false;
 
-    const requiredPermissions = command.requiredPermissions || command.permissions;
-    if (requiredPermissions && typeof requiredPermissions === 'object') {
+            if (!category.hidden) category.hidden = false;
 
-        for (let i = 0; i < requiredPermissions.length; i++) {
-            const permission = requiredPermissions[i];
-
-            if (!permissions.includes(permission)) throw new TypeError("Command located at \"" + filePath + "\" has an invalid permission: \"" + permission + "\". Permissions must be all upper case.");
-
-
+            this.categories.set(category.name, category);
         }
 
-    } else if (requiredPermissions && typeof requiredPermissions === 'string') {
-        const permission = requiredPermissions;
-        if (!permissions.includes(permission)) throw new TypeError("Command located at \"" + filePath + "\" has an invalid permission: \"" + permission + "\". Permissions must be all upper case.");
+    }*/
+    /**
+     * 
+     * @param {boolean} ignoreBots 
+     * @returns 
+     */
+    setIgnoreBots(ignoreBots) {
+        if (typeof ignoreBots !== 'boolean') throw new Error('Ignore bots must be boolean!');
+
+        this.ignoreBots = ignoreBots;
+
+        return this;
     }
+    /**
+     * 
+     * @param {boolean} showWarns 
+     * @returns 
+     */
+    setShowWarns(showWarns) {
+        if (typeof showWarns !== 'boolean') throw new Error('Show warns must be boolean!');
 
+        this.showWarns = showWarns;
 
-    let missing = [];
+        return this;
+    }
+    /**
+     * 
+     * @param {object} commands 
+     * @returns 
+     */
+    setDisableDefaultCommands(commands) {
+        if (typeof commands !== 'object') throw new Error('Disable default commands must be array!');
 
-    if (!command.category) missing.push("Category");
+        this.disableCommands = commands;
 
-    if (!command.description) missing.push("Description");
-    //if (missing.length >= 1 && instance.showWarns) console.warn("AdvancedHandler > Command \"" + commandName + "\" does not have the following properties: " + missing + ".");
+        return this;
+    }
+    /**
+     * 
+     * @param {object} owners 
+     * @returns 
+     */
+    setBotOwners(owners) {
+        if (typeof owners !== 'object') throw new Error('Owners must be array!');
 
-    if (command.testOnly && !instance.testServers) console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"testOnly\" set to true, but no test servers are defined.")
+        this.botOwners = owners;
 
-    if (command.ownersOnly && !instance.botOwners) console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"ownersOnly\" set to true, but no bot owners are defined.")
+        return this;
+    }
+    /**
+     * 
+     * @param {object} servers 
+     * @returns 
+     */
+    setTestServers(servers) {
+        if (typeof servers !== 'object') throw new Error('Test servers must be array!');
 
-    if (command.maxArgs && !command.expectedArgs) {
-        throw new TypeError("Command located at \"" + filePath + "\" if have maxArgs must have expectedArgs")
-    } else if (command.minArgs && !command.expectedArgs) {
-        throw new TypeError("Command located at \"" + filePath + "\" if have minArgs must have expectedArgs")
+        this.testServers = servers;
+
+        return this;
+    }
+    /**
+     * 
+     * @param {object} dbOptions 
+     * @returns 
+     */
+    setDbOptions(dbOptions) {
+        if (typeof dbOptions !== 'object') throw new Error('DB options must be object!');
+
+        this.dbOptions = dbOptions;
+
+        return this;
 
     }
+    /**
+     * 
+     * @param {string} path 
+     * @returns 
+     */
+    setMessagesPath(path) {
+        if (!typeof path === 'string') throw new Error('Path must be string!');
 
-    if (commandName && typeof commandName !== 'string') {
-        throw new TypeError('Command name must be string!');
-    } else if (commandName && typeof commandName === 'string') {
-        instance.commands.set(commandName, command)
+        this.messagesPath = path;
+
+        return this;
     }
+    ////////////////////
+    //gets
+    /**
+     * 
+     * @param {any} guild
+     * @returns 
+     */
+    async getPrefix(guild) {
+        const prefixSchema = require('./models/prefix-schema');
+        let prefix;
+        if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+            let result = await prefixSchema.
+                findByIdAndUpdate(guild.id, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
 
+            prefix = result.prefix;
+            if (!prefix) prefix = this.defaultPrefix
 
-
-}
-
-CommandHandler.prototype.getPrefix = async (guild, instance) => {
-    const prefixSchema = require('./models/prefix-schema');
-    let prefix, result;
-    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
-        result = await prefixSchema.findByIdAndUpdate(guild.id, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
-        return result.prefix
-    } else {
-        result = { prefix: instance.defaultPrefix };
-        prefix = result.prefix;
+        } else {
+            prefix = this.defaultPrefix;
+        }
+        await prefixSchema.
+            findByIdAndUpdate(guild.id, { _id: guild.id, prefix: prefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
         return prefix;
+
     }
-}
+    /**
+     * 
+     * @param {string} messageName 
+     * @returns 
+     */
+    getMessage(messageName) {
+        let message;
+        if (typeof messageName !== 'string') throw new TypeError('messageName must be a string!');
+        const path = this.messagesPath;
 
-CommandHandler.prototype.getMessage = (instance, messageName) => {
-    let message;
-    if (typeof messageName !== 'string') throw new TypeError('messageName must be a string!');
-    const path = instance.messagesPath;
+        const messagesPath = JSON.parse(fs.readFileSync(path, 'utf8'));
 
-    const messagesPath = JSON.parse(fs.readFileSync(path, 'utf8'));
+        message = messagesPath[messageName] || 'undefined message';
 
-    message = messagesPath[messageName] || 'undefined message';
+        return message;
+    }
 
-    return message;
-}
+    getDBConnectURI() {
+        return this.mongoURI;
+    }
+    /**
+     * 
+     * @param {string} commandName 
+     * @param {string} args 
+     * @returns 
+     */
+    newSyntaxError(commandName, args) {
+        let text = this.getMessage("SYNTAX_ERROR")
+            .replace(/{PREFIX}/g, this.prefix)
+            .replace(/{COMMAND}/g, commandName)
+            .replace(/{ARGUMENTS}/g, args);
 
-CommandHandler.prototype.isDBConnected = () => {
-    let mongooseConnect = false;
+        return text;
+    }
+    /**
+     * 
+     * @param {string} commandName 
+     * @returns 
+     */
+    isCommandHas(commandName) {
+        let has
+        const commands = this.commands;
+        if (commands.has(commandName.toLocaleLowerCase())) {
+            has = true
+        } else {
 
-    if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) mongooseConnect = true;
-
-    return mongooseConnect;
-}
-
-CommandHandler.prototype.getDBConnectURI = (instance) => {
-    let uri
-
-    uri = instance.mongoURI;
-
-    return uri;
-}
-
-CommandHandler.prototype.newSytnaxError = (prefix, commandName, arguments, instance) => {
-    let text = CommandHandler.prototype.getMessage(instance, "SYNTAX_ERROR")
-        .replace("{PREFIX}", prefix)
-        .replace("{COMMAND}", commandName)
-        .replace("{ARGUMENTS}", arguments)
-
-    return text;
-}
-
-CommandHandler.prototype.isCommandHas = (command, instance) => {
-    let has
-    const commands = instance.commands;
-    if (commands.has(command.toLocaleLowerCase())) {
-        has = [true, command];
-    } else {
-
-        for (let i = 0; i < commands.size; i++) {
-            let cmd = commands.first(i + 1)[i]
-            if (cmd.aliases && cmd.aliases.includes(command)) has = [true, cmd.name || command];
+            for (let i = 0; i < commands.size; i++) {
+                let cmd = commands.first(i + 1)[i]
+                if (cmd.aliases && cmd.aliases.includes(commandName.toLocaleLowerCase())) has = true
+            }
         }
+        return has;
     }
-    return has;
+    /**
+        * 
+        * @param {string} commandName 
+        * @returns 
+        */
+    getCommand(commandName) {
+        let cmd;
+
+        let commands = this.commands;
+        for (let i = 0; i < commands.size; i++) {
+            let commandNamee = commands.first(i + 1)[i].name
+            let cmd = commands.first(i + 1)[i];
+            if (commandNamee === commandName) {
+                return cmd;
+            } else if (cmd.aliases) {
+                if (cmd.aliases === commandName.toLocaleLowerCase() || cmd.aliases.includes(commandName.toLocaleLowerCase())) {
+                    return cmd
+                } else {
+                    cmd = undefined;
+                }
+            }
+        }
+
+        return cmd;
+    }
+
+    
+    /*getCategory(category) {
+        let cat = this.categories.get(category) || this.hiddenCategories.get(category);
+
+        return cat;
+    }*/
+   
+    /*getCategoryEmoji(category) {
+
+        let emoji = this.categories.get(category).emoji || this.hiddenCategories.get(category).emoji;
+
+        return emoji;
+    }*/
+    
+    /*isEmojiUsed(emoji) {
+        let has = false
+        this.categories.forEach(item => {
+            if (item.emoji === emoji) has = true;
+        })
+        return has;
+    }*/
+
+    isDBConnected() {
+        let connect = false
+
+        if (mongoose.connection.readyState === 1) connect = true
+
+        return connect;
+    }
 }
 
-CommandHandler.prototype.getLeftTime = (finishCooldownDate, Datenow) => {
+
+
+const getLeftTime = (finishCooldownDate, Datenow) => {
     const moment = require('moment')
     require('moment-duration-format')
     let now = Datenow;
@@ -364,4 +538,5 @@ CommandHandler.prototype.getLeftTime = (finishCooldownDate, Datenow) => {
     }
     return text;
 }
+
 module.exports = CommandHandler

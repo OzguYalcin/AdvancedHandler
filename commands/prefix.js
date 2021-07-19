@@ -12,13 +12,13 @@ module.exports = {
     callback: async ({ client, message, args, prefix, instance }) => {
 
         if (instance.isDBConnected() === false) {
-            message.reply(instance.getMessage(instance, "NO_DATABASE_FOUND"));
+            message.reply(instance.getMessage("NO_DATABASE_FOUND"));
             return;
         };
 
         await prefixSchema.findByIdAndUpdate(message.guild.id, { prefix: args[0] }, { upsert: true });
 
-        let text = instance.getMessage(instance, "SET_PREFIX").replace("{PREFIX}", args[0]);
+        let text = instance.getMessage("SET_PREFIX").replace("{PREFIX}", args[0]);
 
         return message.reply(text);
     }

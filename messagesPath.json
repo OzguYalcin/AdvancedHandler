@@ -4,6 +4,7 @@
     "SOMETHINK_WENT_WRONG": "Something went wrong and this was reported to the authorities.",
     "TEST_ONLY": "This command can only be used on test servers.",
     "MISSING_PERMISSION": "You must have the {PERM} permission in order to use this command.",
+    "MISSIN_BOT_PERMISSION": "I must need the {PERM} permission in order to use this command.",
     "NO_DATABASE_FOUND": "No database connection found!",
     "SET_PREFIX": "Set the command prefix to {PREFIX}.",
     "SYNTAX_ERROR": "Incorrect usage! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\"",
@@ -13,5 +14,14 @@
     "REQUIRED_ROLE_ALREADY_ADDED": "{ROLE} already added to command {COMMAND}",
     "REQUIRED_ROLE_ALREADY_REMOVED": "{ROLE} already removed to command {COMMAND}",
     "MISSING_ROLES": "You do not have the required roles to use this command! You need one of the following: {ROLES}",
-    "COOLDOWN": "You must wait {COOLDOWN} before using that command again."
+    "COOLDOWN": "You must wait {COOLDOWN} before using that command again.",
+    "HELP_COMMAND": {
+        "TITLE": "{COMMAND}'s Informations"
+    },
+    "HELP": {
+        "TITLE": "Help Menu",
+        "SELECT_A_CATEGORY": "Please select a command category by clicking it's reaction.",
+        "DESCRIPTION_FIRST_LINE": "Use 🚪 to return to the previous menu.",
+        "DESCRIPTION_SECOND_LINE": "Use ⬅ and ➡ to navigate between pages"
+    }
 }

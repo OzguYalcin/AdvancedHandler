@@ -5,15 +5,15 @@ const fs = require('fs')
 
 /**
  * @param {any} client
- * @param {Object} options
+ * @param {string} featuresDir
  */
 
 class FeaturesHandler {
-    constructor(client, options) {
+    constructor(client, featuresDir) {
         if (!client) throw new TypeError(`AdvancedHandler > No client specified`);
-        if (!options.featuresDir) options.featuresDir = 'features', console.warn(`AdvancedHandler > No features directory specified. Using "features".`);
+        if (!featuresDir) featuresDir = 'features', console.warn(`AdvancedHandler > No features directory specified. Using "features".`);
          
-        this.featuresDir = options.featuresDir
+        this.featuresDir = featuresDir
 
         var files = getAllFiles(this.featuresDir);
             var amount = files.length;

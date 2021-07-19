@@ -1,116 +1,140 @@
-# Advanced Handler
+# AdvancedHandler
 Advanced DiscordJS Command &amp; Feature Handler. This Command Handler is made for discord bot developers and makes botting easy.
 
 # Installation
 
-## NPM 
+## NPM
 
 ```
 npm install advancedhandler
 ```
 
-## How we use this Advanced Handler in main file
+# Usage
+
+## Main File
 
 ```js
-const DiscordJS = require('discord.js');
+const Discord = require('discord.js');
 
-const client = new DiscordJS.Client();
+const client = new Discord.Client();
 
-const AdvancedHandler = require('advancedhandler');
+const config = require('./config.json');
 
-new AdvancedHandler(client, {
+const Handler = require('advancedhandler');
+
+const CommandHandler = new Handler.CommandHandler(client, {
     commandsDir: 'commands', //Must be string, this is specified our commands directory.
-    featuresDir: 'features', //Must be string, this is specified our features (events) directory.
-    defaultPrefix: '/', //Must be string, this is specified our default prefix.
-    ignoreBots: true, //Must be boolen, this is specified the bot ignore another bots or not.
-    showWarns: true, //Must be boolen, this is specified the bot show warns or not.
+    defaultPrefix: '!', //Must be string, this is specified our default prefix. If have no prefix using "!".
+    ignoreBots: false, //Must be boolean, this is specified the bot ignore another bots or not.
+    showWarns: true, //Must be boolean, this is specified the bot show warns or not.
     disableDefaultCommands: [
-        //'prefix',
-        //'requiredroles'
+        'prefix',
+        'requiredroles'
     ], //Must be array, this is disable the handlers command.
-    botOwners: ['123456789', '12345678'], //It can be string if have 1 owner, it specified the bot owners.
-    testServers: ['123456789', '12345678'], //It can be string if have 1 test servers, it specified the bot test servers.
-    messagesPath: 'messages.json', /* It should be string, It specified the messages path. If you leave this blank,
+    botOwners: ['123456789', '12345678', '583239996803121152'], //It can be string if have 1 owner, it specified the bot owners.
+    testServers: ['123456789', '12345678', '850796991976964136'], //It can be string if have 1 test servers, it specified the bot test servers.
+    /*messagesPath: 'messages.json', /* It should be string, It specified the messages path. If you leave this blank,
     it will automatically set its own messagesPath. And if you set your own messagesPath you should write the handler own messagesPath to your
     own messagesPath*/
-    mongoURI: 'YOUR SECRET URI', //Must be string, this is specified your mongoDB connection uri
+    mongoURI: config.MONGO_URI, //Must be string, this is specified your mongoDB connection uri
     dbOptions: {
         keepAlive: true, useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
-    } //Must be an object, this is specified the mongoDB connection options. If you don't set this handler do automatically set own options.
-})
+    }, //Must be an object, this is specified the mongoDB connection options. If you don't set this handler do automatically set own options.
+});
 
-client.login("YOUR SECRET TOKEN");
+const FeatureHandler = new Handler.FeaturesHandler(client, 'features');
+
+client.login(config.TOKEN);
 ```
-Everything you need to do to use it and everything needed for the main file is written in the lines of code above
 
-## How we use this Advanced Handler in command file
+### Main File Functions
+
+```js
+.setDefaultPrefix("prefix")
+.setCommandsDir("commands directory")
+.setMongoURI(config.MONGO_URI)
+.setDisableDefaultCommands([
+        'prefix',
+        'requiredroles'
+])
+.setShowWarns('true or false')
+.setIgnoreBots('true or false')
+.setBotOwners([
+'owner ID',
+'owner ID'
+])
+.setTestServers([
+'server ID',
+'server ID',
+])
+.setMessagesPath('Your own messages path')
+.setDbOptions('Your mongoDB connection options')
+```
+
+## Command File
 ```js
 module.exports = {
-    name: 'hello',
+    name: 'hello', //Must be string
     aliases: ['hi'], //Must be array
-    cooldown: '5s',
-    minArgs: 0,
-    maxArgs: 1,
-    expectedArgs: '<optional text>', 
-    requiredPermissions:['ADMINISTRATOR'], //Must be array
-    guildOnly: true,
-    ownerOnly: true,
-    testOnly: true,
-    callback: async ({client, message, args, prefix, instance}) => { //callback or execute or run
-    message.reply('Hi!');
+    cooldown: '5s', //Must be string
+    minArgs: 0, //Must be number
+    maxArgs: 1, //Must be number
+    expectedArgs: '<optional text>',
+    requiredPermissions: ['MANAGE_GUILD'], //Must be Array
+    requiredBotPermissions: ['MANAGE_GUILD'], //Must be Array 
+    guildOnly: true, //Must be boolean
+    ownerOnly: true, //Must be boolean
+    testOnly: true, //Must be boolean
+    callback: async ({ client, message, args, prefix, instance }) => { //callback or execute or run
+        message.reply('Hi! My prefix is ' + prefix + '.');
     }
 }
 ```
-What kind of features are in the commands file and how to use it is written in the above line of code
-
-### Command file callbacks and their meanings
+### Callback parametters
 
 #### client:
 
 Your discord.js client.
 
-#### message: 
+#### message:
 
-Discord.js message.
+Your discord.js message.
 
-#### args: 
+#### args:
 
-Discord.js message arguments.
+Your message arguments.
 
 #### prefix:
 
-Your bot prefix .
+Bots prefix.
 
 #### instance:
+CommandHandler's "this".
 
-Instance allows you to use the functions of the AdvancedHandler package in your command file, and these functions are:
+##### Instance functions:
 
 ```js
-instance.getMessage(instance, "message name here"); //Get message in messages path
+.getPrefix(guild) // returns prefix.
 
-instance.getPrefix(guild, instance); //Get guild prefix
+.getMessage(messageName) // returns message from messages path.
 
-instance.getDBConnectURI(instance); //Get mongoDB Connection URI
+.newSyntaxError(commandName, args) //create new syntax error.
 
-instance.getLeftTime("cooldown finish date here", "Date now"); //Find the left time to cooldown finish
+.isCommandHas(commandName) // check the command has.
 
-instance.isCommandHas("command name here", instance); //Check the command has or not
+.getCommand(commandName) //return command from commands collection.
 
-instance.isDBConnected(); //Check the DB is connected or not
+.getDBConnectURI() // returns mongoDB connection URI.
 
-instance.newSytnaxError("prefix", "command name here", "arguments (expectedArgs)", instance); //Create new sytnax error
-
+.isDBConnected() // check the mongoDB connected.
 ```
-how the functions are used and what they do is written in the above line of code
 
-## How we use this Advanced Handler in feature file
+## Feature File
 
 ```js
 module.exports = client => {
     client.on('ready', () => {
-        console.log('I am ready!')
+        console.log('I am ready!' + ' ' + client.user.tag)
     })
 }
 ```
-
-How it is used is shown in the above line of code. Codes are subject to change.
