@@ -10,7 +10,6 @@ module.exports = {
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
     callback: async ({ client, message, args, prefix, instance }) => {
-
         if (instance.isDBConnected() === false) {
             message.reply(instance.getMessage("NO_DATABASE_FOUND"));
             return;

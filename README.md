@@ -40,9 +40,9 @@ const CommandHandler = new Handler.CommandHandler(client, {
     dbOptions: {
         keepAlive: true, useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
     }, //Must be an object, this is specified the mongoDB connection options. If you don't set this handler do automatically set own options.
-});
+}).run();
 
-const FeatureHandler = new Handler.FeaturesHandler(client, 'features');
+const FeatureHandler = new Handler.FeatureHandler(client, 'features');
 
 client.login(config.TOKEN);
 ```
@@ -69,6 +69,7 @@ client.login(config.TOKEN);
 ])
 .setMessagesPath('Your own messages path')
 .setDbOptions('Your mongoDB connection options')
+.run() // This function must be the last used function
 ```
 
 ## Command File

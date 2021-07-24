@@ -18,7 +18,7 @@ module.exports = {
             let command = args[1]
             const isCmdHas = instance.isCommandHas(command);
             if (!isCmdHas) {
-                return message.reply(instance.getMessage("UNKOWN_COMMAND").replace("{COMMAND}", command));
+                return message.reply(instance.getMessage("UNKOWN_COMMAND").replace("{COMMAND}", command.name));
             }
             command = instance.getCommand(command)
             if (!role) return message.reply(instance.newSyntaxError(prefix, "requiredroles", "[add | remove] [command name] [role id | mention role]"));
@@ -26,10 +26,10 @@ module.exports = {
             if (args[0] === "add") {
                 const result = await requiredRolesSchema.findOneAndUpdate({
                     guildID: message.guild.id,
-                    command: command
+                    command: command.name
                 }, {
                     guildID: message.guild.id,
-                    command: command,
+                    command: command.name,
                 }, {
                     upsert: true,
                     new: true,
@@ -37,15 +37,15 @@ module.exports = {
                 });
 
                 if (result.requiredRoles.includes(role.id)) {
-                    return message.reply(instance.getMessage("REQUIRED_ROLE_ALREADY_ADDED").replace("{ROLE}", role.id).replace("{COMMAND}", command))
+                    return message.reply(instance.getMessage("REQUIRED_ROLE_ALREADY_ADDED").replace("{ROLE}", role.id).replace("{COMMAND}", command.name))
                 }
 
                 await requiredRolesSchema.findOneAndUpdate({
                     guildID: message.guild.id,
-                    command: command
+                    command: command.name
                 }, {
                     guildID: message.guild.id,
-                    command: command,
+                    command: command.name,
                     $addToSet: {
                         requiredRoles: role.id
                     }
@@ -55,30 +55,30 @@ module.exports = {
                     setDefaultsOnInsert: true
                 });
 
-                return message.reply(instance.getMessage("ADDED_REQUIRED_ROLE").replace("{ROLE}", role.id).replace("{COMMAND}", command))
+                return message.reply(instance.getMessage("ADDED_REQUIRED_ROLE").replace("{ROLE}", role.id).replace("{COMMAND}", command.name))
             } else if (args[0] === "remove") {
                 const result = await requiredRolesSchema.findOneAndUpdate({
                     guildID: message.guild.id,
-                    command: command
+                    command: command.name
                 }, {
                     guildID: message.guild.id,
-                    command: command,
+                    command: command.name,
                 }, {
                     upsert: true,
                     new: true,
                     setDefaultsOnInsert: true
                 });
-
+console.log(result)
                 if (!result.requiredRoles.includes(role.id)) {
-                    return message.reply(instance.getMessage("REQUIRED_ROLE_ALREADY_REMOVED").replace("{ROLE}", role.id).replace("{COMMAND}", command))
+                    return message.reply(instance.getMessage("REQUIRED_ROLE_ALREADY_REMOVED").replace("{ROLE}", role.id).replace("{COMMAND}", command.name))
                 }
 
                 await requiredRolesSchema.findOneAndUpdate({
                     guildID: message.guild.id,
-                    command: command
+                    command: command.name
                 }, {
                     guildID: message.guild.id,
-                    command: command,
+                    command: command.name,
                     $pull: {
                         requiredRoles: role.id
                     }
@@ -88,7 +88,7 @@ module.exports = {
                     setDefaultsOnInsert: true
                 });
 
-                return message.reply(instance.getMessage("REMOVED_REQUIRED_ROLE").replace("{ROLE}", role.id).replace("{COMMAND}", command))
+                return message.reply(instance.getMessage("REMOVED_REQUIRED_ROLE").replace("{ROLE}", role.id).replace("{COMMAND}", command.name))
             } else {
                 return message.reply(instance.newSyntaxError(prefix, "requiredroles", "[add | remove] [command name] [role id | mention role]"));
             }

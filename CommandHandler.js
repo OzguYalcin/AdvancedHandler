@@ -8,23 +8,36 @@ const mongo = require('./mongo');
 const ms = require('ms');
 const registerCommand = require('./registerCommand');
 /**
-* @param {any} client
-* @param {object} options
+* @constructor
+* @param {DiscordJS.Client|any} client - DiscordJS Client
+* @param {object} options - CommandHandler options
+* @example
+* new AdvancedHandler.CommandHandler(client, {
+* commandsDir: "commands",
+* defaultPrefix: "!",
+* ignoreBots: true,
+* showWarns: true,
+* botOwners: ["ID 1", "ID2"],
+* testServers: ["ID 1", "ID 2"],
+* messagesPath: "your messages path",
+* mongoURI: "your mongoDB connection uri",
+* dbOptions: {
+        keepAlive: true, useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
+    }
+* });
 * @returns
 */
 
 class CommandHandler {
 
-    constructor(client, options) {
+    constructor(client, options = {}) {
         if (!client) throw new TypeError(`AdvancedHandler > No client specified`);
-        if (!options.commandsDir) options.commandsDir = 'commands', console.warn(`AdvancedHandler > No commands directory specified. Using "commands".`);
-        if (!options.mongoURI) console.warn(`AdvancedHandler > No mongoURI specified. Some features don't work!`);
         this.client = client;
         this.commandsDir = options.commandsDir;
         this.defaultPrefix = options.defaultPrefix;
         this.mongoURI = options.mongoURI;
-        this.ignoreBots = options.ignoreBots;
-        this.showWarns = options.showWarns;
+        this.ignoreBots = options.ignoreBots || true;
+        this.showWarns = options.showWarns || true;
         this.disableCommands = options.disableDefaultCommands || [];
         this.botOwners = options.botOwners;
         this.testServers = options.testServers;
@@ -38,9 +51,21 @@ class CommandHandler {
         //this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
         //this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
 
-        mongo(this.getDBConnectURI(), this.dbOptions);
         //this.setCategory(this.categorySettings, this);
 
+
+    }
+
+    ////////////////////
+
+    async run() {
+        mongo(this.mongoURI, this.dpOptions);
+        let client = this.client;
+        if (this.showWarns === true) {
+            if (!this.commandsDir) this.commandsDir = "commands", console.warn("AdvancedHandler > No commands dir specified. Using \"commands\".");
+            if (!this.mongoURI) return console.warn("AdvancedHandler > No mongoDB connection uri. Some features don\'t work!");
+            if (!this.defaultPrefix) this.defaultPrefix = "!", console.warn("AdvancedHandler > No default prefix specified. Using \"!\".");
+        }
         if (fs.existsSync(this.commandsDir)) {
 
             var files = getAllFiles(this.commandsDir);
@@ -66,193 +91,197 @@ class CommandHandler {
 
                 registerCommand(defaultFiles[i][0], defaultFiles[i][1], this, this.disableCommands);
             }
-            client.on('message', async message => {
-                let prefix = message.guild ? await this.getPrefix(message.guild) : this.defaultPrefix;
-                this.prefix = prefix;
-                if (!message.content.startsWith(prefix)) return;
-
-                let content = message.content;
-
-                const args = content.slice(prefix.length).trim().split(/ +/);
-
-                let firstElement = args.shift().toLocaleLowerCase();
-
-                let isCmdHas = this.isCommandHas(firstElement)
 
 
+        } else throw new ('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
 
-                if (!isCmdHas) return;
+        client.on('message', async message => {
+            let prefix = message.guild ? await this.getPrefix(message.guild) : this.defaultPrefix;
+            this.prefix = prefix;
+            if (!message.content.startsWith(prefix)) return;
 
-                const command = this.getCommand(firstElement);
-                if (command.guildOnly && !message.guild) {
-                    return message.reply(this.getMessage("GUILD_ONLY_COMMAND"));
-                }
-                if (message.guild) {
-                    if (command.testOnly && !this.testServers && this.showWarns) {
-                        console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"testOnly\" set to true, but no test servers are defined.")
-                        return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
-                    } else if (command.testOnly && typeof this.testServers === 'object') {
-                        let isGuildTest = false;
+            let content = message.content;
 
-                        this.testServers.forEach((item) => {
-                            if (item === message.guild.id) isGuildTest = true;
-                        })
+            const args = content.slice(prefix.length).trim().split(/ +/);
 
-                        if (isGuildTest === false) {
-                            return message.reply(this.getMessage("TEST_ONLY"));
-                        }
-                    }
-                } else if (!message.guild && command.testOnly && typeof this.testServers === 'string') {
-                    return message.reply(this.getMessage("TEST_ONLY"));
-                }
+            let firstElement = args.shift().toLocaleLowerCase();
 
-                if (command.ownersOnly && !this.botOwners && this.showWarns) {
-                    console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"ownersOnly\" set to true, but no owners are defined.")
+            let isCmdHas = this.isCommandHas(firstElement)
+
+
+
+            if (!isCmdHas) return;
+
+            const command = this.getCommand(firstElement);
+            if (command.guildOnly && !message.guild) {
+                return message.reply(this.getMessage("GUILD_ONLY_COMMAND"));
+            }
+            if (message.guild) {
+                if (command.testOnly && !this.testServers && this.showWarns) {
+                    console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"testOnly\" set to true, but no test servers are defined.")
                     return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
-                } else if (command.testOnly && typeof this.botOwners === 'object') {
-                    let isOwner = false;
+                } else if (command.testOnly && typeof this.testServers === 'object') {
+                    let isGuildTest = false;
 
-                    this.botOwners.forEach(item => {
-                        if (item === message.author.id) isOwner = true;
+                    this.testServers.forEach((item) => {
+                        if (item === message.guild.id) isGuildTest = true;
                     })
-                    if (isOwner === false) {
-                        return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
+
+                    if (isGuildTest === false) {
+                        return message.reply(this.getMessage("TEST_ONLY"));
                     }
-                } else if (command.ownersOnly && typeof this.botOwners === 'string' && this.botOwners !== message.author.id) {
+                }
+            } else if (!message.guild && command.testOnly && typeof this.testServers === 'string') {
+                return message.reply(this.getMessage("TEST_ONLY"));
+            }
+
+            if (command.ownersOnly && !this.botOwners && this.showWarns) {
+                console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"ownersOnly\" set to true, but no owners are defined.")
+                return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
+            } else if (command.testOnly && typeof this.botOwners === 'object') {
+                let isOwner = false;
+
+                this.botOwners.forEach(item => {
+                    if (item === message.author.id) isOwner = true;
+                })
+                if (isOwner === false) {
                     return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
                 }
-                if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
-                    const reqRolesSchema = require('./models/required-roles-schema');
-                    const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: firstElement }, { guildID: message.guild.id, command: firstElement }, { upsert: true, new: true, setDefaultsOnInsert: true });
-                    let roleResult = [];
-                    if (reqRoles.requiredRoles) {
-                        if (typeof reqRoles.requiredRoles === 'object') {
+            } else if (command.ownersOnly && typeof this.botOwners === 'string' && this.botOwners !== message.author.id) {
+                return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
+            }
+            if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+                const reqRolesSchema = require('./models/required-roles-schema');
+                const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: firstElement }, { guildID: message.guild.id, command: firstElement }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                let roleResult = [];
+                if (reqRoles.requiredRoles) {
+                    if (typeof reqRoles.requiredRoles === 'object') {
 
-                            for (let i = 0; i < reqRoles.requiredRoles.length; i++) {
-                                const role = reqRoles.requiredRoles[i];
+                        for (let i = 0; i < reqRoles.requiredRoles.length; i++) {
+                            const role = reqRoles.requiredRoles[i];
 
-                                if (!message.member.roles.cache.has(role)) {
-                                    roleResult = [role, true]
-                                }
+                            if (!message.member.roles.cache.has(role)) {
+                                roleResult = [role, true]
                             }
                         }
                     }
-                    if (roleResult.length !== 0) {
-                        let text = this.getMessage("MISSING_ROLES")
-                            .replace("{ROLES}", roleResult[0])
-
-                        return message.reply(text)
-                    }
                 }
-
-                const permissions = command.requiredPermissions || command.permissions;
-                let permResult = [];
-                if (permissions && typeof permissions === 'object') {
-                    for (let i = 0; i < permissions.length; i++) {
-                        const perm = permissions[i];
-
-                        if (!message.member.hasPermission(perm)) {
-                            permResult = [perm, true]
-                        }
-                    }
-                } else
-                    if (permissions && typeof permissions === 'string') {
-                        if (!message.member.hasPermission(permissions)) {
-                            permResult = [permissions, true]
-                        }
-                    }
-                if (permResult.length !== 0) {
-                    let text = this.getMessage("MISSING_PERMISSION")
-                        .replace("{PERM}", permResult[0])
+                if (roleResult.length !== 0) {
+                    let text = this.getMessage("MISSING_ROLES")
+                        .replace("{ROLES}", roleResult[0])
 
                     return message.reply(text)
                 }
+            }
 
-                const requiredBotPermissions = command.requiredBotPermissions;
-                let permBotResult = [];
-                if (requiredBotPermissions && typeof requiredBotPermissions === 'object') {
-                    for (let i = 0; i < requiredBotPermissions.length; i++) {
-                        const perm = requiredBotPermissions[i];
+            const permissions = command.requiredPermissions || command.permissions;
+            let permResult = [];
+            if (permissions && typeof permissions === 'object') {
+                for (let i = 0; i < permissions.length; i++) {
+                    const perm = permissions[i];
 
-                        if (!message.guild.me.hasPermission(perm)) {
-                            permBotResult = [perm, true]
-                        }
+                    if (!message.member.hasPermission(perm)) {
+                        permResult = [perm, true]
                     }
-                } else
-                    if (requiredBotPermissions && typeof requiredBotPermissions === 'string') {
-                        if (!message.guild.me.hasPermission(requiredBotPermissions)) {
-                            permBotResult = [requiredBotPermissions, true]
-                        }
+                }
+            } else
+                if (permissions && typeof permissions === 'string') {
+                    if (!message.member.hasPermission(permissions)) {
+                        permResult = [permissions, true]
                     }
-                if (permBotResult.length !== 0) {
-                    let text = this.getMessage("MISSING_BOT_PERMISSION")
-                        .replace("{PERM}", permBotResult[0])
+                }
+            if (permResult.length !== 0) {
+                let text = this.getMessage("MISSING_PERMISSION")
+                    .replace("{PERM}", permResult[0])
 
+                return message.reply(text)
+            }
+
+            const requiredBotPermissions = command.requiredBotPermissions;
+            let permBotResult = [];
+            if (requiredBotPermissions && typeof requiredBotPermissions === 'object') {
+                for (let i = 0; i < requiredBotPermissions.length; i++) {
+                    const perm = requiredBotPermissions[i];
+
+                    if (!message.guild.me.hasPermission(perm)) {
+                        permBotResult = [perm, true]
+                    }
+                }
+            } else
+                if (requiredBotPermissions && typeof requiredBotPermissions === 'string') {
+                    if (!message.guild.me.hasPermission(requiredBotPermissions)) {
+                        permBotResult = [requiredBotPermissions, true]
+                    }
+                }
+            if (permBotResult.length !== 0) {
+                let text = this.getMessage("MISSING_BOT_PERMISSION")
+                    .replace("{PERM}", permBotResult[0])
+
+                return message.reply(text)
+            }
+
+            let minArgs = command.minArgs;
+            let maxArgs = command.maxArgs;
+            let expectedArgs = command.expectedArgs;
+
+            if (command.maxArgs && !command.expectedArgs) {
+                throw new TypeError("Command \"" + firstElement + "\" if have maxArgs must have expectedArgs")
+            } else if (command.minArgs && !command.expectedArgs) {
+                throw new TypeError("Command  \"" + firstElement + "\" if have minArgs must have expectedArgs")
+
+            }
+
+            if (expectedArgs) {
+                if (args.length < minArgs || args.length > maxArgs) {
+                    const text = this.newSyntaxError(firstElement, expectedArgs);
                     return message.reply(text)
                 }
+            }
 
-                let minArgs = command.minArgs;
-                let maxArgs = command.maxArgs;
-                let expectedArgs = command.expectedArgs;
+            let commandCooldown = command.cooldown;
+            let now = Date.now();
 
-                if (command.maxArgs && !command.expectedArgs) {
-                    throw new TypeError("Command \"" + firstElement + "\" if have maxArgs must have expectedArgs")
-                } else if (command.minArgs && !command.expectedArgs) {
-                    throw new TypeError("Command  \"" + firstElement + "\" if have minArgs must have expectedArgs")
+            const cooldownSchema = require('./models/cooldown');
 
-                }
+            if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2 && commandCooldown) {
+                let cooldownFinishTime = await cooldownSchema.findOne({ _id: `${message.guild.id}-${message.author.id}`, name: firstElement });
 
-                if (expectedArgs) {
-                    if (args.length < minArgs || args.length > maxArgs) {
-                        const text = this.newSyntaxError(firstElement, expectedArgs);
-                        return message.reply(text)
+                if (cooldownFinishTime) {
+                    if (cooldownFinishTime.cooldown > now) {
+                        return message.reply(this.getMessage("COOLDOWN").replace(/{COOLDOWN}/g, getLeftTime(cooldownFinishTime.cooldown, Date.now())))
+                    } else {
+                        await cooldownSchema.findOneAndUpdate({
+                            _id: `${message.guild.id}-${message.author.id}`,
+                            name: firstElement,
+                        }, { cooldown: now + ms(commandCooldown) }, { upsert: true })
                     }
+
                 }
+            }
 
-                let commandCooldown = command.cooldown;
-                let now = Date.now();
-
-                const cooldownSchema = require('./models/cooldown');
-
-                if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2 && commandCooldown) {
-                    let cooldownFinishTime = await cooldownSchema.findOne({ _id: `${message.guild.id}-${message.author.id}`, name: firstElement });
-
-                    if (cooldownFinishTime) {
-                        if (cooldownFinishTime.cooldown > now) {
-                            return message.reply(this.getMessage("COOLDOWN").replace(/{COOLDOWN}/g, getLeftTime(cooldownFinishTime.cooldown, Date.now())))
-                        } else {
-                            await cooldownSchema.findOneAndUpdate({
-                                _id: `${message.guild.id}-${message.author.id}`,
-                                name: firstElement,
-                            }, { cooldown: now + ms(commandCooldown) }, { upsert: true })
-                        }
-
+            const _callback = command.callback || command.run || command.execute
+            try {
+                _callback(
+                    {
+                        client: client,
+                        message: message,
+                        args: args,
+                        instance: this,
+                        prefix: prefix
                     }
-                }
-
-                const _callback = command.callback || command.run || command.execute
-                try {
-                    _callback(
-                        {
-                            client: client,
-                            message: message,
-                            args: args,
-                            instance: this,
-                            prefix: prefix
-                        }
-                    )
-                } catch (e) {
-                    console.log(e);
-                }
-            })
-
-        } else throw new ('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
+                )
+            } catch (e) {
+                console.log(e);
+            }
+        })
     }
+
+
     /**
-     * 
-     * @param {string} prefix 
-     * @returns 
-     */
+        * 
+        * @param {string} prefix 
+        * @returns 
+        */
     setDefaultPrefix(prefix) {
         if (typeof prefix !== 'string') throw new Error('Prefix must be string!');
         this.defaultPrefix = prefix;
@@ -285,23 +314,23 @@ class CommandHandler {
     }
     /*setCategory(Categories) {
         if (!typeof Categories === 'object') throw new Error('First parametre must be an Array!');
-
+    
         for (let i = 0; i < Categories.length; i++) {
             let category = Categories[i];
-
+    
             if (!category.name) throw new TypeError("Name is required for categories!");
-
+    
             if (!category.emoji) throw new TypeError("Emoji is required for categories!");
-
+    
             if (this.isEmojiUsed(category.emoji)) throw new TypeError("\"" + category.emoji + "\"" + " emoji is already used!");
-
+    
             if (!category.custom) category.custom = false;
-
+    
             if (!category.hidden) category.hidden = false;
-
+    
             this.categories.set(category.name, category);
         }
-
+    
     }*/
     /**
      * 
@@ -388,7 +417,8 @@ class CommandHandler {
 
         return this;
     }
-    ////////////////////
+
+
     //gets
     /**
      * 
@@ -398,20 +428,18 @@ class CommandHandler {
     async getPrefix(guild) {
         const prefixSchema = require('./models/prefix-schema');
         let prefix;
-        if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
-            let result = await prefixSchema.
-                findByIdAndUpdate(guild.id, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
+        if (this.isDBConnected()) {
+            const result = await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
+            if (!result.prefix) {
+                result.prefix = this.defaultPrefix; await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id, prefix: this.defaultPrefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
+            };
 
             prefix = result.prefix;
-            if (!prefix) prefix = this.defaultPrefix
 
         } else {
             prefix = this.defaultPrefix;
         }
-        await prefixSchema.
-            findByIdAndUpdate(guild.id, { _id: guild.id, prefix: prefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
         return prefix;
-
     }
     /**
      * 
@@ -492,20 +520,20 @@ class CommandHandler {
         return cmd;
     }
 
-    
+
     /*getCategory(category) {
         let cat = this.categories.get(category) || this.hiddenCategories.get(category);
 
         return cat;
     }*/
-   
+
     /*getCategoryEmoji(category) {
 
         let emoji = this.categories.get(category).emoji || this.hiddenCategories.get(category).emoji;
 
         return emoji;
     }*/
-    
+
     /*isEmojiUsed(emoji) {
         let has = false
         this.categories.forEach(item => {
@@ -517,7 +545,7 @@ class CommandHandler {
     isDBConnected() {
         let connect = false
 
-        if (mongoose.connection.readyState === 1) connect = true
+        if (mongoose.connection.readyState === 1||mongoose.connection.readyState === 2) connect = true
 
         return connect;
     }

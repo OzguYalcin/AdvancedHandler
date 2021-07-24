@@ -1,8 +1,6 @@
 
 const CommandHandler = require('./CommandHandler');
-const FeaturesHandler = require('./FeaturesHandler');
+const FeatureHandler = require('./FeatureHandler');
 
-module.exports = {
-    CommandHandler,
-    FeaturesHandler
-}
+module.exports.CommandHandler = CommandHandler;
+module.exports.FeatureHandler = FeatureHandler;
