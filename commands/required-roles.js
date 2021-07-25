@@ -1,7 +1,7 @@
 const requiredRolesSchema = require('../models/required-roles-schema');
 module.exports = {
-    name: 'requiredroles',
-    aliases: ['reqroles', 'required-roles', 'reqrole', 'required-role'],
+    name: 'required-roles',
+    aliases: ['reqroles', 'requiredroles', 'reqrole', 'required-role'],
     requiredPermissions: ['ADMINISTRATOR'],
     category: 'Configuration',
     description: 'Specifies what role each command requires.',

@@ -19,9 +19,7 @@
         "TITLE": "{COMMAND}'s Informations"
     },
     "HELP": {
-        "TITLE": "Help Menu",
-        "SELECT_A_CATEGORY": "Please select a command category by clicking it's reaction.",
-        "DESCRIPTION_FIRST_LINE": "Use 🚪 to return to the previous menu.",
-        "DESCRIPTION_SECOND_LINE": "Use ⬅ and ➡ to navigate between pages"
+        "TITLE": "Need help? Here are all of my commands:",
+        "DESCRIPTION": "Use {PREFIX}help followed by a command name to get more additional information on a command. For example: {PREFIX}help prefix."
     }
 }

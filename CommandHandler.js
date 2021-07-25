@@ -44,16 +44,11 @@ class CommandHandler {
         this.messagesPath = options.messagesPath || path.join(__dirname, 'messagesPath.json');
         this.dbOptions = options.dbOptions;
         this.commands = new DiscordJS.Collection();
-        //this.categories = new DiscordJS.Collection();
-        //this.hiddenCategories = new DiscordJS.Collection();
-        //this.categorySettings = options.categorySettings;
-
-        //this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
-        //this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
-
-        //this.setCategory(this.categorySettings, this);
-
-
+        this.categories = new DiscordJS.Collection();
+        this.hiddenCategories = new DiscordJS.Collection();
+        this.helpSettings = {};
+        this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
+        this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
     }
 
     ////////////////////
@@ -107,8 +102,6 @@ class CommandHandler {
             let firstElement = args.shift().toLocaleLowerCase();
 
             let isCmdHas = this.isCommandHas(firstElement)
-
-
 
             if (!isCmdHas) return;
 
@@ -520,34 +513,73 @@ class CommandHandler {
         return cmd;
     }
 
-
-    /*getCategory(category) {
-        let cat = this.categories.get(category) || this.hiddenCategories.get(category);
-
-        return cat;
-    }*/
-
-    /*getCategoryEmoji(category) {
-
-        let emoji = this.categories.get(category).emoji || this.hiddenCategories.get(category).emoji;
-
-        return emoji;
-    }*/
-
-    /*isEmojiUsed(emoji) {
-        let has = false
-        this.categories.forEach(item => {
-            if (item.emoji === emoji) has = true;
-        })
-        return has;
-    }*/
-
     isDBConnected() {
         let connect = false
 
-        if (mongoose.connection.readyState === 1||mongoose.connection.readyState === 2) connect = true
+        if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) connect = true
 
         return connect;
+    }
+
+    //Help
+    /**
+     * 
+     * @param {object} settings - Help Settings
+     * @example
+     * {
+    embed: {
+        color: "RED", 
+    },
+    authoritativePerms: [
+        "ADMINISTRATOR",
+        "KICK_MEMBERS",
+        "BAN_MEMBERS"
+    ],
+    categories: [
+        {
+            name: "Admin", 
+            emoji: "emoji ID", 
+            custom: true, 
+            hidden: true 
+        },
+        {
+            name: "Configuration",
+            emoji: "🔨",
+            custom: false,
+            hidden: false
+        }
+    ]
+}
+     * @returns 
+     */
+    setHelpSettings(settings) {
+        let categories = settings.categories;
+        if (!categories || !categories.length) throw new Error("At least one category must be specified!");
+        if (!settings.embed || !settings.embed.color) settings.embed = {
+            color: null
+        };
+
+        if (!settings.authoritativePerms) settings.authoritativePerms = ["ADMINISTRATOR"];
+
+        for (let category of categories) {
+            if (!category.name) throw new Error("The category must have a name");
+            if (category.emoji && !category.custom) category.custom = false;
+            if (!category.hidden) category.hidden = false;
+
+            if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
+            if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
+            if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
+            if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
+
+            this.categories.set(category.name, category);
+
+            if(category.hidden === true) {
+            this.hiddenCategories.set(category.name, category)
+            }
+        }
+
+        this.helpSettings = settings;
+        return this;
     }
 }
 

@@ -55,7 +55,8 @@ client.login(config.TOKEN);
 .setMongoURI(config.MONGO_URI)
 .setDisableDefaultCommands([
         'prefix',
-        'requiredroles'
+        'requiredroles',
+        'help'
 ])
 .setShowWarns('true or false')
 .setIgnoreBots('true or false')
@@ -69,6 +70,30 @@ client.login(config.TOKEN);
 ])
 .setMessagesPath('Your own messages path')
 .setDbOptions('Your mongoDB connection options')
+ .setHelpSettings({
+     embed: {
+        color: "RED"
+     }
+        authoritativePerms: [
+            "ADMINISTRATOR",
+            "KICK_MEMBERS",
+            "BAN_MEMBERS"
+        ],
+        categories: [
+            {
+                name: "Admin",
+                emoji: "861615112750366731",
+                custom: true,
+                hidden: true
+            },
+            {
+                name: "Fun",
+                emoji: "😄",
+                custom: false,
+                hidden: false
+            }
+        ]
+    })
 .run() // This function must be the last used function
 ```
 
