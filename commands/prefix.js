@@ -10,15 +10,22 @@ module.exports = {
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
     callback: async ({ client, message, args, prefix, instance }) => {
+        if(!message.guild) {
+            return message.reply(await instance.getMessage(message.guild, "CANNOT_SET_PREFIX_IN_DMS"))
+        }
         if (instance.isDBConnected() === false) {
-            message.reply(instance.getMessage("NO_DATABASE_FOUND"));
+            message.reply(await instance.getMessage(message.guild,"NO_DATABASE_FOUND"));
             return;
         };
 
-        await prefixSchema.findByIdAndUpdate(message.guild.id, { prefix: args[0] }, { upsert: true });
+        let pre = args[0];
 
-        let text = instance.getMessage("SET_PREFIX").replace("{PREFIX}", args[0]);
+        if(prefix === pre) {
+            return message.reply(await instance.getMessage(message.guild, "CURRENT_PREFIX_ALREADY_THIS", {PREFIX: pre}))
+        }
 
-        return message.reply(text);
+        await instance.setPrefix(message.guild, pre);
+
+        return message.channel.send(await instance.getMessage(message.guild, "SET_PREFIX", {PREFIX: pre}));
     }
 }

@@ -35,6 +35,7 @@ class CommandHandler {
         this.client = client;
         this.commandsDir = options.commandsDir;
         this.defaultPrefix = options.defaultPrefix;
+        this.defaultLang = options.defaultLang || options.defaultLanguage || "en"
         this.mongoURI = options.mongoURI;
         this.ignoreBots = options.ignoreBots || true;
         this.showWarns = options.showWarns || true;
@@ -107,12 +108,12 @@ class CommandHandler {
 
             const command = this.getCommand(firstElement);
             if (command.guildOnly && !message.guild) {
-                return message.reply(this.getMessage("GUILD_ONLY_COMMAND"));
+                return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND"));
             }
             if (message.guild) {
                 if (command.testOnly && !this.testServers && this.showWarns) {
                     console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"testOnly\" set to true, but no test servers are defined.")
-                    return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
+                    return message.reply(await this.getMessage(message.guild, "SOMETHINK_WENT_WRONG"));
                 } else if (command.testOnly && typeof this.testServers === 'object') {
                     let isGuildTest = false;
 
@@ -121,16 +122,16 @@ class CommandHandler {
                     })
 
                     if (isGuildTest === false) {
-                        return message.reply(this.getMessage("TEST_ONLY"));
+                        return message.reply(await this.getMessage(message.guild, "TEST_ONLY"));
                     }
                 }
             } else if (!message.guild && command.testOnly && typeof this.testServers === 'string') {
-                return message.reply(this.getMessage("TEST_ONLY"));
+                return message.reply(await this.getMessage(message.guild, "TEST_ONLY"));
             }
 
             if (command.ownersOnly && !this.botOwners && this.showWarns) {
                 console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"ownersOnly\" set to true, but no owners are defined.")
-                return message.reply(this.getMessage("SOMETHINK_WENT_WRONG"));
+                return message.reply(await this.getMessage(message.guild, "SOMETHINK_WENT_WRONG"));
             } else if (command.testOnly && typeof this.botOwners === 'object') {
                 let isOwner = false;
 
@@ -138,10 +139,10 @@ class CommandHandler {
                     if (item === message.author.id) isOwner = true;
                 })
                 if (isOwner === false) {
-                    return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
+                    return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"));
                 }
             } else if (command.ownersOnly && typeof this.botOwners === 'string' && this.botOwners !== message.author.id) {
-                return message.reply(this.getMessage("BOT_OWNERS_ONLY"));
+                return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"));
             }
             if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
                 const reqRolesSchema = require('./models/required-roles-schema');
@@ -160,8 +161,7 @@ class CommandHandler {
                     }
                 }
                 if (roleResult.length !== 0) {
-                    let text = this.getMessage("MISSING_ROLES")
-                        .replace("{ROLES}", roleResult[0])
+                    let text = await this.getMessage(message.guild, "MISSING_ROLES", { ROLE: roleResult[0] })
 
                     return message.reply(text)
                 }
@@ -184,8 +184,7 @@ class CommandHandler {
                     }
                 }
             if (permResult.length !== 0) {
-                let text = this.getMessage("MISSING_PERMISSION")
-                    .replace("{PERM}", permResult[0])
+                let text = await this.getMessage(message.guild, "MISSING_PERMISSION", { PERM: permResult[0] })
 
                 return message.reply(text)
             }
@@ -207,8 +206,7 @@ class CommandHandler {
                     }
                 }
             if (permBotResult.length !== 0) {
-                let text = this.getMessage("MISSING_BOT_PERMISSION")
-                    .replace("{PERM}", permBotResult[0])
+                let text = await this.getMessage(message.guild, "MISSING_BOT_PERMISSION", { PERM: permBotResult[0] })
 
                 return message.reply(text)
             }
@@ -226,7 +224,7 @@ class CommandHandler {
 
             if (expectedArgs) {
                 if (args.length < minArgs || args.length > maxArgs) {
-                    const text = this.newSyntaxError(firstElement, expectedArgs);
+                    const text = await this.newSyntaxError(message.guild, firstElement, expectedArgs);
                     return message.reply(text)
                 }
             }
@@ -235,16 +233,15 @@ class CommandHandler {
             let now = Date.now();
 
             const cooldownSchema = require('./models/cooldown');
-
-            if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2 && commandCooldown) {
-                let cooldownFinishTime = await cooldownSchema.findOne({ _id: `${message.guild.id}-${message.author.id}`, name: firstElement });
+            if (this.isDBConnected() && commandCooldown) {
+                let cooldownFinishTime = await cooldownSchema.findOneAndUpdate({ _id: `${message.guild.id}-${message.author.id}-${firstElement}`, name: firstElement }, { _id: `${message.guild.id}-${message.author.id}-${firstElement}` }, { upsert: true });
 
                 if (cooldownFinishTime) {
                     if (cooldownFinishTime.cooldown > now) {
-                        return message.reply(this.getMessage("COOLDOWN").replace(/{COOLDOWN}/g, getLeftTime(cooldownFinishTime.cooldown, Date.now())))
+                        return message.reply(await this.getMessage(message.guild, "COOLDOWN", { COOLDOWN: getLeftTime(cooldownFinishTime, now) }))
                     } else {
                         await cooldownSchema.findOneAndUpdate({
-                            _id: `${message.guild.id}-${message.author.id}`,
+                            _id: `${message.guild.id}-${message.author.id}-${firstElement}`,
                             name: firstElement,
                         }, { cooldown: now + ms(commandCooldown) }, { upsert: true })
                     }
@@ -265,73 +262,20 @@ class CommandHandler {
                 )
             } catch (e) {
                 console.log(e);
+
             }
         })
     }
 
+    //Options
 
-    /**
-        * 
-        * @param {string} prefix 
-        * @returns 
-        */
-    setDefaultPrefix(prefix) {
-        if (typeof prefix !== 'string') throw new Error('Prefix must be string!');
-        this.defaultPrefix = prefix;
-
-        return this;
-    }
-    /**
-     * 
-     * @param {string} dir 
-     * @returns 
-     */
-    setCommandsDir(dir) {
-        if (typeof dir !== 'string') throw new Error('Directory must be string!');
-
-        this.commandsDir = dir;
-
-        return this
-    }
-    /**
-     * 
-     * @param {string} uri 
-     * @returns 
-     */
-    setMongoURI(uri) {
-        if (typeof uri !== 'string') throw new Error('mongoDB uri must be string!');
-
-        this.mongoURI = uri;
-
-        return this;
-    }
-    /*setCategory(Categories) {
-        if (!typeof Categories === 'object') throw new Error('First parametre must be an Array!');
-    
-        for (let i = 0; i < Categories.length; i++) {
-            let category = Categories[i];
-    
-            if (!category.name) throw new TypeError("Name is required for categories!");
-    
-            if (!category.emoji) throw new TypeError("Emoji is required for categories!");
-    
-            if (this.isEmojiUsed(category.emoji)) throw new TypeError("\"" + category.emoji + "\"" + " emoji is already used!");
-    
-            if (!category.custom) category.custom = false;
-    
-            if (!category.hidden) category.hidden = false;
-    
-            this.categories.set(category.name, category);
-        }
-    
-    }*/
     /**
      * 
      * @param {boolean} ignoreBots 
      * @returns 
      */
     setIgnoreBots(ignoreBots) {
-        if (typeof ignoreBots !== 'boolean') throw new Error('Ignore bots must be boolean!');
+        if (typeof ignoreBots !== 'boolean') throw new TypeError('Ignore bots must be boolean!');
 
         this.ignoreBots = ignoreBots;
 
@@ -343,21 +287,9 @@ class CommandHandler {
      * @returns 
      */
     setShowWarns(showWarns) {
-        if (typeof showWarns !== 'boolean') throw new Error('Show warns must be boolean!');
+        if (typeof showWarns !== 'boolean') throw new TypeError('Show warns must be boolean!');
 
         this.showWarns = showWarns;
-
-        return this;
-    }
-    /**
-     * 
-     * @param {object} commands 
-     * @returns 
-     */
-    setDisableDefaultCommands(commands) {
-        if (typeof commands !== 'object') throw new Error('Disable default commands must be array!');
-
-        this.disableCommands = commands;
 
         return this;
     }
@@ -367,7 +299,7 @@ class CommandHandler {
      * @returns 
      */
     setBotOwners(owners) {
-        if (typeof owners !== 'object') throw new Error('Owners must be array!');
+        if (typeof owners !== 'object') throw new TypeError('Owners must be array!');
 
         this.botOwners = owners;
 
@@ -379,40 +311,186 @@ class CommandHandler {
      * @returns 
      */
     setTestServers(servers) {
-        if (typeof servers !== 'object') throw new Error('Test servers must be array!');
+        if (typeof servers !== 'object') throw new TypeError('Test servers must be array!');
 
         this.testServers = servers;
 
         return this;
     }
-    /**
-     * 
-     * @param {object} dbOptions 
-     * @returns 
-     */
-    setDbOptions(dbOptions) {
-        if (typeof dbOptions !== 'object') throw new Error('DB options must be object!');
-
-        this.dbOptions = dbOptions;
-
-        return this;
-
-    }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    //message
     /**
      * 
      * @param {string} path 
      * @returns 
      */
     setMessagesPath(path) {
-        if (!typeof path === 'string') throw new Error('Path must be string!');
+        if (!typeof path === 'string') throw new TypeError('Path must be string!');
 
         this.messagesPath = path;
 
         return this;
     }
+    /**
+    * @param {message.guild|any} guild
+    * @param {string} messageID 
+    * @param {object} args
+    * @returns 
+    */
+    async getMessage(guild, messageID, args = {}) {
+        let message;
+        let lang = await this.getLanguage(guild);
+        if (typeof messageID !== 'string') throw new TypeError('messageID must be a string!');
+        const path = this.messagesPath;
+
+        const messagesPath = JSON.parse(fs.readFileSync(path, 'utf8'));
+        message = messagesPath[messageID];
+
+        return message[lang]
+            .replace(/{PREFIX}/g, args.PREFIX)
+            .replace(/{LANG}/g, args.LANG)
+            .replace(/{COMMAND}/g, args.COMMAND)
+            .replace(/{ARGUMENTS}/g, args.ARGUMENTS)
+            .replace(/{ROLE}/g, args.ROLE)
+            .replace(/{PERM}/g, args.PERM)
+            .replace(/{COOLDOWN}/g, args.COOLDOWN);
+    }
 
 
-    //gets
+
+
+    /**
+     * @param {message.guild|any} guild
+     * @param {string} command 
+     * @param {string} args 
+     * @returns 
+     */
+    async newSyntaxError(guild, command, args) {
+        let text = await this.getMessage(guild, "SYNTAX_ERROR", { PREFIX: await this.getPrefix(guild), COMMAND: command, ARGUMENTS: args })
+        return text;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////
+    //Help
+    /**
+         * 
+         * @param {object} settings - Help Settings
+         * @example
+         * {
+        embed: {
+            color: "RED", 
+        },
+        authoritativePerms: [
+            "ADMINISTRATOR",
+            "KICK_MEMBERS",
+            "BAN_MEMBERS"
+        ],
+        categories: [
+            {
+                name: "Admin", 
+                emoji: "emoji ID", 
+                custom: true, 
+                hidden: true 
+            },
+            {
+                name: "Configuration",
+                emoji: "🔨",
+                custom: false,
+                hidden: false
+            }
+        ]
+    }
+         * @returns 
+         */
+    setHelpSettings(settings) {
+        let categories = settings.categories;
+        if (!categories || !categories.length) throw new Error("At least one category must be specified!");
+        if (!settings.embed || !settings.embed.color) settings.embed = {
+            color: null
+        };
+
+        if (!settings.authoritativePerms) settings.authoritativePerms = ["ADMINISTRATOR"];
+
+        for (let category of categories) {
+            if (!category.name) throw new Error("The category must have a name");
+            if (category.emoji && !category.custom) category.custom = false;
+            if (!category.hidden) category.hidden = false;
+
+            if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
+            if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
+            if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
+            if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
+
+            this.categories.set(category.name, category);
+
+            if (category.hidden === true) {
+                this.hiddenCategories.set(category.name, category)
+            }
+        }
+
+        this.helpSettings = settings;
+        return this;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Lang
+    /**
+     * 
+     * @param {message.guild|any} guild 
+     * @param {string} language
+     * @returns 
+     */
+    async setLanguage(guild, language) {
+        const langSchema = require("./models/lang");
+
+        const result = await langSchema.findByIdAndUpdate(guild.id, { lang: language }, { upsert: true });
+
+        return result;
+    }
+    /**
+     * 
+     * @param {message.guild|any} guild,
+     *  @returns
+     */
+    async getLanguage(guild) {
+        const langSchema = require('./models/lang');
+        let lang;
+
+        if (this.isDBConnected()) {
+            let result = await langSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true })
+            if (!result.lang) result.lang = this.defaultLang;
+            lang = result.lang
+        } else {
+            lang = this.defaultLang;
+        }
+        return lang
+    }
+
+    /**
+     * 
+     * @param {string} language
+     * @returns
+     */
+    setDefaultLanguage(language) {
+        if (typeof language !== 'string') throw new TypeError('Language must be string!');
+        const langs = ["tr", "en"]
+        if (!langs.includes(language.toLocaleLowerCase())) throw new Error("Unkown language!");
+
+        this.defaultLang = language;
+
+        return this;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Prefix
+    /**
+        * 
+        * @param {string} prefix 
+        * @returns 
+        */
+    setDefaultPrefix(prefix) {
+        if (typeof prefix !== 'string') throw new TypeError('Prefix must be string!');
+        this.defaultPrefix = prefix;
+
+        return this;
+    }
     /**
      * 
      * @param {any} guild
@@ -436,73 +514,66 @@ class CommandHandler {
     }
     /**
      * 
-     * @param {string} messageName 
-     * @returns 
+     * @param {message.guild|any} guild 
+     * @param {string} prefix 
      */
-    getMessage(messageName) {
-        let message;
-        if (typeof messageName !== 'string') throw new TypeError('messageName must be a string!');
-        const path = this.messagesPath;
+    async setPrefix(guild, prefix) {
+        const prefixSchema = require('./models/prefix-schema');
 
-        const messagesPath = JSON.parse(fs.readFileSync(path, 'utf8'));
+        const result = await prefixSchema.findByIdAndUpdate(guild.id, { prefix: prefix }, { upsert: true });
 
-        message = messagesPath[messageName] || 'undefined message';
-
-        return message;
+        return result;
     }
 
-    getDBConnectURI() {
-        return this.mongoURI;
+    /////////////////////////////////////////////////////////////////////////////
+    //command
+    /**
+     * 
+     * @param {object} commands 
+     * @returns 
+     */
+    setDisableDefaultCommands(commands) {
+        if (typeof commands !== 'object') throw new TypeError('Disable default commands must be array!');
+
+        this.disableCommands = commands;
+
+        return this;
     }
     /**
      * 
-     * @param {string} commandName 
-     * @param {string} args 
+     * @param {string} command 
      * @returns 
      */
-    newSyntaxError(commandName, args) {
-        let text = this.getMessage("SYNTAX_ERROR")
-            .replace(/{PREFIX}/g, this.prefix)
-            .replace(/{COMMAND}/g, commandName)
-            .replace(/{ARGUMENTS}/g, args);
-
-        return text;
-    }
-    /**
-     * 
-     * @param {string} commandName 
-     * @returns 
-     */
-    isCommandHas(commandName) {
+    isCommandHas(command) {
         let has
         const commands = this.commands;
-        if (commands.has(commandName.toLocaleLowerCase())) {
+        if (commands.has(command.toLocaleLowerCase())) {
             has = true
         } else {
 
             for (let i = 0; i < commands.size; i++) {
                 let cmd = commands.first(i + 1)[i]
-                if (cmd.aliases && cmd.aliases.includes(commandName.toLocaleLowerCase())) has = true
+                if (cmd.aliases && cmd.aliases.includes(command.toLocaleLowerCase())) has = true
             }
         }
         return has;
     }
     /**
         * 
-        * @param {string} commandName 
+        * @param {string} command 
         * @returns 
         */
-    getCommand(commandName) {
+    getCommand(command) {
         let cmd;
 
         let commands = this.commands;
         for (let i = 0; i < commands.size; i++) {
-            let commandNamee = commands.first(i + 1)[i].name
+            let command = commands.first(i + 1)[i].name
             let cmd = commands.first(i + 1)[i];
-            if (commandNamee === commandName) {
+            if (commandNamee === command) {
                 return cmd;
             } else if (cmd.aliases) {
-                if (cmd.aliases === commandName.toLocaleLowerCase() || cmd.aliases.includes(commandName.toLocaleLowerCase())) {
+                if (cmd.aliases === command.toLocaleLowerCase() || cmd.aliases.includes(command.toLocaleLowerCase())) {
                     return cmd
                 } else {
                     cmd = undefined;
@@ -512,7 +583,34 @@ class CommandHandler {
 
         return cmd;
     }
+    /**
+         * 
+         * @param {string} dir 
+         * @returns 
+         */
+    setCommandsDir(dir) {
+        if (typeof dir !== 'string') throw new TypeError('Directory must be string!');
 
+        this.commandsDir = dir;
+
+        return this
+    }
+    //////////////////////////////////////////////////////////////////////
+
+    //mongoDB
+    /**
+     * 
+     * @param {object} dbOptions 
+     * @returns 
+     */
+    setDbOptions(dbOptions) {
+        if (typeof dbOptions !== 'object') throw new TypeError('DB options must be object!');
+
+        this.dbOptions = dbOptions;
+
+        return this;
+
+    }
     isDBConnected() {
         let connect = false
 
@@ -520,67 +618,22 @@ class CommandHandler {
 
         return connect;
     }
-
-    //Help
+    getDBConnectURI() {
+        return this.mongoURI;
+    }
     /**
-     * 
-     * @param {object} settings - Help Settings
-     * @example
-     * {
-    embed: {
-        color: "RED", 
-    },
-    authoritativePerms: [
-        "ADMINISTRATOR",
-        "KICK_MEMBERS",
-        "BAN_MEMBERS"
-    ],
-    categories: [
-        {
-            name: "Admin", 
-            emoji: "emoji ID", 
-            custom: true, 
-            hidden: true 
-        },
-        {
-            name: "Configuration",
-            emoji: "🔨",
-            custom: false,
-            hidden: false
-        }
-    ]
-}
-     * @returns 
-     */
-    setHelpSettings(settings) {
-        let categories = settings.categories;
-        if (!categories || !categories.length) throw new Error("At least one category must be specified!");
-        if (!settings.embed || !settings.embed.color) settings.embed = {
-            color: null
-        };
+    * 
+    * @param {string} uri 
+    * @returns 
+    */
+    setMongoURI(uri) {
+        if (typeof uri !== 'string') throw new TypeError('mongoDB uri must be string!');
 
-        if (!settings.authoritativePerms) settings.authoritativePerms = ["ADMINISTRATOR"];
+        this.mongoURI = uri;
 
-        for (let category of categories) {
-            if (!category.name) throw new Error("The category must have a name");
-            if (category.emoji && !category.custom) category.custom = false;
-            if (!category.hidden) category.hidden = false;
-
-            if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
-            if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
-            if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
-            if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
-
-            this.categories.set(category.name, category);
-
-            if(category.hidden === true) {
-            this.hiddenCategories.set(category.name, category)
-            }
-        }
-
-        this.helpSettings = settings;
         return this;
     }
+    //////////////////////////////////////////////////////////////////////
 }
 
 

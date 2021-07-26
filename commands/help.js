@@ -9,10 +9,10 @@ module.exports = {
     expectedArgs: '[command]',
     requiredBotPermissions: ['SEND_MESSAGES'],
     callback: async ({ client, message, args, prefix, instance }) => {
+        let helpSettings = instance.helpSettings;
         if (!args[0]) {
             let allCommands = instance.commands;
             let allCategories = instance.categories;
-            let helpSettings = instance.helpSettings;
             let authoritativePerms = helpSettings.authoritativePerms;
             let isHavePerm = false
             for (let i = 0; i < authoritativePerms.length; i++) {
@@ -20,15 +20,16 @@ module.exports = {
                 if (message.member.hasPermission(perm)) isHavePerm = true
                 else continue;
             }
-            let HelpTexts = instance.getMessage("HELP");
-            let title = HelpTexts.TITLE;
-            let description = HelpTexts.DESCRIPTION.replace(/{PREFIX}/g, prefix);
+
+            let title = await instance.getMessage(message.guild, "HELP_TITLE", { PREFIX: prefix })
+            let description = await instance.getMessage(message.guild, "HELP_DESCRIPTION", { PREFIX: prefix })
             if (isHavePerm === true) {
                 let categories = allCategories;
                 const embed = new DiscordJS.MessageEmbed()
                     .setTitle(title)
                     .setDescription(description)
                     .setFooter(message.member.user.tag)
+                    .setColor(helpSettings.embed.color)
                     .setTimestamp();
                 for (let category of categories) {
                     let commands = allCommands.filter(c => c.category === category[1].name);
@@ -51,6 +52,7 @@ module.exports = {
                     .setTitle(title)
                     .setDescription(description)
                     .setFooter(message.member.user.tag)
+                    .setColor(helpSettings.embed.color)
                     .setTimestamp();
                 for (let category of categories) {
                     let commands = allCommands.filter(c => c.category === category[1].name);
@@ -80,6 +82,7 @@ module.exports = {
             }
             const embed = new DiscordJS.MessageEmbed()
                 .setTitle('Command Details:')
+                .setColor(helpSettings.embed.color)
                 .addField("Command:", `\`${command.name || command.secondName}\``)
                 .addField("Aliases:", `${command.aliases ? `${aliasesText}` : `No aliases for this command.`}`)
                 .addField("Usage:", `\`${prefix}${command.name || command.secondName} ${command.expectedArgs ? `${command.expectedArgs}` : ""}\``)

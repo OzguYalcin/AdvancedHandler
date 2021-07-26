@@ -29,7 +29,9 @@ const CommandHandler = new Handler.CommandHandler(client, {
     showWarns: true, //Must be boolean, this is specified the bot show warns or not.
     disableDefaultCommands: [
         'prefix',
-        'requiredroles'
+        'requiredroles',
+        'help',
+        'language'
     ], //Must be array, this is disable the handlers command.
     botOwners: ['123456789', '12345678', '583239996803121152'], //It can be string if have 1 owner, it specified the bot owners.
     testServers: ['123456789', '12345678', '850796991976964136'], //It can be string if have 1 test servers, it specified the bot test servers.
@@ -56,7 +58,8 @@ client.login(config.TOKEN);
 .setDisableDefaultCommands([
         'prefix',
         'requiredroles',
-        'help'
+        'help',
+        'language'
 ])
 .setShowWarns('true or false')
 .setIgnoreBots('true or false')
@@ -94,6 +97,7 @@ client.login(config.TOKEN);
             }
         ]
     })
+.setDefaultLanguage("en") // en or tr (tr = turkish, en = english)
 .run() // This function must be the last used function
 ```
 
@@ -140,19 +144,36 @@ CommandHandler's "this".
 ##### Instance functions:
 
 ```js
-.getPrefix(guild) // returns prefix.
+//Lang
+await setLanguage(guild, language);
+await getLanguage(guild);
 
-.getMessage(messageName) // returns message from messages path.
+//Prefix
+await setPrefix(guild, prefix);
+await getPrefix(guild);
 
-.newSyntaxError(commandName, args) //create new syntax error.
+//Commands
+isCommandHas(command);
+getCommand(command)
 
-.isCommandHas(commandName) // check the command has.
+//mongoDB
+getDBConnectURI();
+isDBConnected();
 
-.getCommand(commandName) //return command from commands collection.
+//message
+await getMessage(guild, messageID, args)
+//args example:
+//{
+//     PREFIX:prefix,
+//     COOLDOWN: cooldown,
+//     LANG: language,
+//     COMMAND: command,
+//     ARGUMENTS: arguments,
+//     ROLE: role,
+//     PERM: permission,
+// }
+await newSyntaxError(guild, command, args)
 
-.getDBConnectURI() // returns mongoDB connection URI.
-
-.isDBConnected() // check the mongoDB connected.
 ```
 
 ## Feature File
@@ -164,3 +185,33 @@ module.exports = client => {
     })
 }
 ```
+
+# CommandHandler Default Commands
+
+## Help 
+name: Help <br />
+aliases: command <br />
+category: Help <br />
+description: Displays this bot's commands <br />
+usage: {PREFIX}help [command] <br />
+
+## Language
+name: language <br />
+aliases: lang <br />
+category: Configuration <br />
+description: Displays or sets the language for this Discord server <br />
+usage: {PREFIX}language [language] <br /> 
+
+## Prefix
+name: prefix <br />
+aliases: null <br />
+category: Configuration <br />
+description: Displays or sets the prefix for the current guild <br />
+usage: {PREFIX}prefix [prefix] <br />
+
+## Required-roles
+name: required-roles <br />
+aliases: reqroles, requiredroles, reqrole, required-role <br />
+category: Configuration <br />
+description: Specifies what role each command requires. <br />
+usage: {PREFIX}required-roles [add | remove] [command name] [role id | mention role] <br />
