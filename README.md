@@ -14,55 +14,79 @@ npm install advancedhandler
 ## Main File
 
 ```js
-const Discord = require('discord.js');
+const DiscordJS = require('discord.js');
 
-const client = new Discord.Client();
+const AdvancedHandler = required('advancedhandler');
 
-const config = require('./config.json');
+const client = new DiscordJS.Client();
 
-const Handler = require('advancedhandler');
+client.on('ready', () => {
+    console.log('I am ready!');
 
-const CommandHandler = new Handler.CommandHandler(client, {
-    commandsDir: 'commands', //Must be string, this is specified our commands directory.
-    defaultPrefix: '!', //Must be string, this is specified our default prefix. If have no prefix using "!".
-    ignoreBots: false, //Must be boolean, this is specified the bot ignore another bots or not.
-    showWarns: true, //Must be boolean, this is specified the bot show warns or not.
-    disableDefaultCommands: [
-        'prefix',
-        'requiredroles',
-        'help',
-        'language'
-    ], //Must be array, this is disable the handlers command.
-    botOwners: ['123456789', '12345678', '583239996803121152'], //It can be string if have 1 owner, it specified the bot owners.
-    testServers: ['123456789', '12345678', '850796991976964136'], //It can be string if have 1 test servers, it specified the bot test servers.
-    /*messagesPath: 'messages.json', /* It should be string, It specified the messages path. If you leave this blank,
-    it will automatically set its own messagesPath. And if you set your own messagesPath you should write the handler own messagesPath to your
-    own messagesPath*/
-    mongoURI: config.MONGO_URI, //Must be string, this is specified your mongoDB connection uri
-    dbOptions: {
-        keepAlive: true, useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
-    }, //Must be an object, this is specified the mongoDB connection options. If you don't set this handler do automatically set own options.
-}).run();
+    new AdvancedHandler.CommandHandler(client, {
+        //Specified the commands dir. Must be string.
+        commandsDir: 'commands',
+        //Specified the default prefix. Must be string.
+        defaultPrefix: '$',
+        //Specified the disabled default commands. Must be array.
+        disableDefaultCommands: [
+            'channel',
+            'command',
+            'help',
+            'language',
+            'prefix',
+            'required-roles'
+        ],
+        //Specified the bot owners. Must be array.
+        botOwners: [
+            'ID 1',
+            'ID 2'
+        ],
+        //Specified the bot test servers. Must be array.
+        testServers: [
+            'ID 1',
+            'ID 2',
+        ],
+        //Specified the bot ignore the bots or not. Must be boolean.
+        ignoreBots: true,
+        //Specified the bot show warns or not. Must be boolean.
+        showWarns: true,
+        //Specified the messagesPath. Must be string.
+        //If you write your own path you must copy default path then paste to the your path.
+        messagesPath: 'messages.json',
+        //Specified the mongoDB connection URI. Must be string.
+        mongoURI: 'YOUR SECRET URI',
+        //Specified the mongoDB connection options. Must be object.
+        dbOptions: {
+        keepAlive: true, 
+        useNewUrlParser: true,
+        useUnifiedTopology: true, 
+        useFindAndModify: false
+        }
+    }).run();
+    //If you don't use the run function CommandHandler not work and run function must be used last.
 
-const FeatureHandler = new Handler.FeatureHandler(client, 'features');
-
-client.login(config.TOKEN);
+    new AdvancedHandler.FeatureHandler(client, 'features') 
+    // Second parametre is specified your features dir. Must be string
+})
 ```
 
 ### Main File Functions
 
 ```js
-.setDefaultPrefix("prefix")
-.setCommandsDir("commands directory")
-.setMongoURI(config.MONGO_URI)
+.setDefaultPrefix("NEW_PREFIX")
+.setCommandsDir("NEW_DIRECTORY")
+.setMongoURI("YOUR_SECRET_MONGO_URI")
 .setDisableDefaultCommands([
-        'prefix',
-        'requiredroles',
+        'channel',
+        'command',
         'help',
-        'language'
+        'language',
+        'prefix',
+        'required-roles'
 ])
-.setShowWarns('true or false')
-.setIgnoreBots('true or false')
+.setShowWarns(true) //Must be boolean
+.setIgnoreBots(true)
 .setBotOwners([
 'owner ID',
 'owner ID'
@@ -155,14 +179,17 @@ await getPrefix(guild);
 //Commands
 isCommandHas(command);
 getCommand(command)
+await isCommandDisabled(guild, command)
+await isChannelDisabled(guild, command, channel)
+//channel is not the channel name channel collection.
 
 //mongoDB
 getDBConnectURI();
 isDBConnected();
 
 //message
-await getMessage(guild, messageID, args)
-//args example:
+await getMessage(guild, messageID, options)
+//options example:
 //{
 //     PREFIX:prefix,
 //     COOLDOWN: cooldown,
@@ -171,9 +198,28 @@ await getMessage(guild, messageID, args)
 //     ARGUMENTS: arguments,
 //     ROLE: role,
 //     PERM: permission,
+//     CHANNELS: channels,
+//     CHANNEL: channel
 // }
-await newSyntaxError(guild, command, args)
+//Return the message from messages path and it replace the "prefix, cooldown, language, command, arguments, role, perm, channels, channel"
+//If there are variables in the text you want to write, here are the equations:
+// {PREFIX} = specified prefix.
+// {COOLDOWN} = specified cooldown.
+// {LANG} = specified language.
+// {COMMAND} = specified command name.
+// {ARGUMENTS} = specified expectedArgs.
+// {ROLE} = specified role.
+// {PERM} = specified permission.
+// {CHANNELS} = specified some channels.
+// {CHANNEL} = specified a channel.
 
+await newSyntaxError(guild, command, args)
+//example
+//If you use like this: 
+//await newSyntaxError(guild, "required-roles", "[add | remove] [command name] [role id | mention role]")
+//Return this:
+//"{PREFIX}required-roles [add | remove] [command name] [role id | mention role]
+//and it replace the "{PREFIX}"
 ```
 
 ## Feature File
@@ -187,6 +233,19 @@ module.exports = client => {
 ```
 
 # CommandHandler Default Commands
+## Channel
+name: Channel <br />
+aliases: null <br />
+category: Configuration <br />
+description: Enables or disables a command (or all) for a channel or some channel. <br />
+usage: {PREFIX}channel [enable | disable] [command | all] [tag channel | tag channels] <br />
+
+## Command
+name: Command
+aliases: null <br />
+category: Configuration <br />
+description: Makes a command enable or disable for this guild <br />
+usage: {PREFIX}command [enable | disable] [command] <br />
 
 ## Help 
 name: Help <br />

@@ -42,7 +42,7 @@ class CommandHandler {
         this.disableCommands = options.disableDefaultCommands || [];
         this.botOwners = options.botOwners;
         this.testServers = options.testServers;
-        this.messagesPath = options.messagesPath || path.join(__dirname, 'messagesPath.json');
+        this.messagesPath = options.messagesPath || path.join(__dirname, 'messages.json');
         this.dbOptions = options.dbOptions;
         this.commands = new DiscordJS.Collection();
         this.categories = new DiscordJS.Collection();
@@ -110,6 +110,17 @@ class CommandHandler {
             if (command.guildOnly && !message.guild) {
                 return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND"));
             }
+
+            if (message.guild && this.isDBConnected()) {
+                if (await this.isCommandDisabled(message.guild, command.name ? command.name : command.secondName)) {
+                    return message.reply(await this.getMessage(message.guild, "COMMAND_DISABLED"))
+                }
+
+                if (await this.isChannelDisabled(message.guild, command.name ? command.name : command.secondName, message.channel)) {
+                    return message.reply(await this.getMessage(message.guild, "CHANNEL_DISABLED"))
+                }
+            }
+
             if (message.guild) {
                 if (command.testOnly && !this.testServers && this.showWarns) {
                     console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"testOnly\" set to true, but no test servers are defined.")
@@ -232,13 +243,13 @@ class CommandHandler {
             let commandCooldown = command.cooldown;
             let now = Date.now();
 
-            const cooldownSchema = require('./models/cooldown');
+            const cooldownSchema = require('./models/cooldown-schema');
             if (this.isDBConnected() && commandCooldown) {
                 let cooldownFinishTime = await cooldownSchema.findOneAndUpdate({ _id: `${message.guild.id}-${message.author.id}-${firstElement}`, name: firstElement }, { _id: `${message.guild.id}-${message.author.id}-${firstElement}` }, { upsert: true });
 
                 if (cooldownFinishTime) {
                     if (cooldownFinishTime.cooldown > now) {
-                        return message.reply(await this.getMessage(message.guild, "COOLDOWN", { COOLDOWN: getLeftTime(cooldownFinishTime, now) }))
+                        return message.reply(await this.getMessage(message.guild, "COOLDOWN", { COOLDOWN: getLeftTime(cooldownFinishTime.cooldown, now) }))
                     } else {
                         await cooldownSchema.findOneAndUpdate({
                             _id: `${message.guild.id}-${message.author.id}-${firstElement}`,
@@ -272,7 +283,7 @@ class CommandHandler {
     /**
      * 
      * @param {boolean} ignoreBots 
-     * @returns 
+     * @returns {CommandHandler}
      */
     setIgnoreBots(ignoreBots) {
         if (typeof ignoreBots !== 'boolean') throw new TypeError('Ignore bots must be boolean!');
@@ -284,7 +295,7 @@ class CommandHandler {
     /**
      * 
      * @param {boolean} showWarns 
-     * @returns 
+     * @returns {CommandHandler} 
      */
     setShowWarns(showWarns) {
         if (typeof showWarns !== 'boolean') throw new TypeError('Show warns must be boolean!');
@@ -296,7 +307,7 @@ class CommandHandler {
     /**
      * 
      * @param {object} owners 
-     * @returns 
+     * @returns {CommandHandler} 
      */
     setBotOwners(owners) {
         if (typeof owners !== 'object') throw new TypeError('Owners must be array!');
@@ -308,7 +319,7 @@ class CommandHandler {
     /**
      * 
      * @param {object} servers 
-     * @returns 
+     * @returns {CommandHandler} 
      */
     setTestServers(servers) {
         if (typeof servers !== 'object') throw new TypeError('Test servers must be array!');
@@ -322,7 +333,7 @@ class CommandHandler {
     /**
      * 
      * @param {string} path 
-     * @returns 
+     * @returns {CommandHandler} 
      */
     setMessagesPath(path) {
         if (!typeof path === 'string') throw new TypeError('Path must be string!');
@@ -334,10 +345,14 @@ class CommandHandler {
     /**
     * @param {message.guild|any} guild
     * @param {string} messageID 
-    * @param {object} args
-    * @returns 
+    * @param {object} options
+    * @returns {string}
+    * @expamle 
+    * await instance.getMessage(message.guild, "MESSAGE ID", {
+    * PREFIX: prefix
+    * })
     */
-    async getMessage(guild, messageID, args = {}) {
+    async getMessage(guild, messageID, options = {}) {
         let message;
         let lang = await this.getLanguage(guild);
         if (typeof messageID !== 'string') throw new TypeError('messageID must be a string!');
@@ -346,14 +361,22 @@ class CommandHandler {
         const messagesPath = JSON.parse(fs.readFileSync(path, 'utf8'));
         message = messagesPath[messageID];
 
+        if (!message) {
+            throw new Error("Unkown message ID!");
+        }
+
         return message[lang]
-            .replace(/{PREFIX}/g, args.PREFIX)
-            .replace(/{LANG}/g, args.LANG)
-            .replace(/{COMMAND}/g, args.COMMAND)
-            .replace(/{ARGUMENTS}/g, args.ARGUMENTS)
-            .replace(/{ROLE}/g, args.ROLE)
-            .replace(/{PERM}/g, args.PERM)
-            .replace(/{COOLDOWN}/g, args.COOLDOWN);
+            .replace(/{CHANNELS}/g, options.CHANNELS)
+            .replace(/{CHANNEL}/g, options.CHANNEL)
+            .replace(/{EMOJI}/g, options.EMOJI)
+            .replace(/{CATEGORY}/g, options.CATEGORY)
+            .replace(/{PREFIX}/g, options.PREFIX)
+            .replace(/{LANG}/g, options.LANG)
+            .replace(/{COMMAND}/g, options.COMMAND)
+            .replace(/{ARGUMENTS}/g, options.ARGUMENTS)
+            .replace(/{ROLE}/g, options.ROLE)
+            .replace(/{PERM}/g, options.PERM)
+            .replace(/{COOLDOWN}/g, options.COOLDOWN);
     }
 
 
@@ -363,7 +386,9 @@ class CommandHandler {
      * @param {message.guild|any} guild
      * @param {string} command 
      * @param {string} args 
-     * @returns 
+     * @returns {string}
+     * @example
+     * await instance.newSyntaxError(message.guild, "required-roles", "[add | remove] [command name] [role id | mention role]")
      */
     async newSyntaxError(guild, command, args) {
         let text = await this.getMessage(guild, "SYNTAX_ERROR", { PREFIX: await this.getPrefix(guild), COMMAND: command, ARGUMENTS: args })
@@ -377,7 +402,7 @@ class CommandHandler {
          * @example
          * {
         embed: {
-            color: "RED", 
+            color: "RED"
         },
         authoritativePerms: [
             "ADMINISTRATOR",
@@ -399,7 +424,7 @@ class CommandHandler {
             }
         ]
     }
-         * @returns 
+         * @returns {CommandHandler}
          */
     setHelpSettings(settings) {
         let categories = settings.categories;
@@ -410,25 +435,122 @@ class CommandHandler {
 
         if (!settings.authoritativePerms) settings.authoritativePerms = ["ADMINISTRATOR"];
 
-        for (let category of categories) {
-            if (!category.name) throw new Error("The category must have a name");
-            if (category.emoji && !category.custom) category.custom = false;
-            if (!category.hidden) category.hidden = false;
+        if (!settings.embed.withPages) settings.embed.withPages = true;
+        if (!settings.embed.destroy) settings.embed.destroy = true;
+        if (!settings.embed.home) settings.embed.home = true;
 
-            if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
-            if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
-            if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
-            if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
+        if (settings.embed.withPages) {
 
-            this.categories.set(category.name, category);
+            for (let category of categories) {
+                if (!category.name) throw new Error("The category must have a name");
+                if (!category.emoji) throw new Error("Emoji is required for each category of withPages true!")
+                if (!category.custom) category.custom = false;
+                if (!category.hidden) category.hidden = false;
+                if (this.isNameUsed(category.name)) throw new Error("Names must be used once!");
+                if (this.isEmojiUsed(category.emoji)) throw new Error("Emojis must be used once!");
+                if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
+                if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
+                if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
+                if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
 
-            if (category.hidden === true) {
-                this.hiddenCategories.set(category.name, category)
+                this.categories.set(category.name, category);
+            }
+
+        } else {
+            for (let category of categories) {
+                if (!category.name) throw new Error("The category must have a name");
+                if (category.emoji && !category.custom) category.custom = false;
+                if (!category.hidden) category.hidden = false;
+                if (this.isNameUsed(category.name)) throw new Error("Names must be used once!");
+
+                if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
+                if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
+                if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
+                if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
+
+                this.categories.set(category.name, category);
             }
         }
-
         this.helpSettings = settings;
         return this;
+    }
+    /**
+     * 
+     * @param {string} emoji 
+     * @returns {boolean}
+     */
+    isEmojiUsed(emoji) {
+        let result;
+
+        const e = this.categories.filter(c => c.emoji === emoji);
+
+        if (e.size !== 0) result = true
+        else result = false
+
+        return result;
+    }
+    /**
+         * 
+         * @param {string} name 
+         * @returns {boolean}
+         */
+    isNameUsed(name) {
+        let result;
+
+        const e = this.categories.filter(c => c.name === name);
+        if (e.size !== 0) result = true
+        else result = false
+
+        return result;
+    }
+    /**
+     * 
+     * @param {string} emoji 
+     * @returns {category}
+     */
+    getCategoryByEmoji(emoji) {
+        let result;
+
+        result = this.categories.filter(c => c.emoji = emoji)
+
+        if (result.size === 0) result = this.categories.filter(c => c.emoji === emoji.id);
+
+        if (result.size === 0) result = undefined;
+
+        return result;
+    }
+    /**
+         * 
+         * @param {string} name 
+         * @returns {category}
+         */
+    getCategoryByName(name) {
+        let result;
+
+        result = this.categories.filter(c => c.name = name);
+
+        if (result.size === 0) result = undefined;
+
+        return result;
+    }
+    /**
+     * 
+     * @param {message} message 
+     * @param {object} authoritativePerms 
+     * @returns {any}
+     */
+    getCategories(message, authoritativePerms) {
+        let perm = false, categories = this.categories
+        for (let i = 0; i < authoritativePerms.length; i++) {
+            let _perm = authoritativePerms[i];
+            if (message.member.hasPermission(_perm)) perm = true
+            else continue;
+        }
+
+        if (perm) categories = this.categories;
+        else categories = this.categories.filter(c => c.hidden === false);
+
+        return categories;
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Lang
@@ -436,10 +558,10 @@ class CommandHandler {
      * 
      * @param {message.guild|any} guild 
      * @param {string} language
-     * @returns 
+     * @returns {any}
      */
     async setLanguage(guild, language) {
-        const langSchema = require("./models/lang");
+        const langSchema = require("./models/language-schema");
 
         const result = await langSchema.findByIdAndUpdate(guild.id, { lang: language }, { upsert: true });
 
@@ -447,11 +569,11 @@ class CommandHandler {
     }
     /**
      * 
-     * @param {message.guild|any} guild,
-     *  @returns
+     * @param {message.guild|any} guild
+     *  @returns {language}
      */
     async getLanguage(guild) {
-        const langSchema = require('./models/lang');
+        const langSchema = require('./models/language-schema');
         let lang;
 
         if (this.isDBConnected()) {
@@ -467,7 +589,7 @@ class CommandHandler {
     /**
      * 
      * @param {string} language
-     * @returns
+     * @returns {CommandHandler}
      */
     setDefaultLanguage(language) {
         if (typeof language !== 'string') throw new TypeError('Language must be string!');
@@ -483,7 +605,7 @@ class CommandHandler {
     /**
         * 
         * @param {string} prefix 
-        * @returns 
+        * @returns {CommandHandler}
         */
     setDefaultPrefix(prefix) {
         if (typeof prefix !== 'string') throw new TypeError('Prefix must be string!');
@@ -494,7 +616,7 @@ class CommandHandler {
     /**
      * 
      * @param {any} guild
-     * @returns 
+     * @returns {prefix}
      */
     async getPrefix(guild) {
         const prefixSchema = require('./models/prefix-schema');
@@ -516,6 +638,7 @@ class CommandHandler {
      * 
      * @param {message.guild|any} guild 
      * @param {string} prefix 
+     * @returns {any}
      */
     async setPrefix(guild, prefix) {
         const prefixSchema = require('./models/prefix-schema');
@@ -530,7 +653,7 @@ class CommandHandler {
     /**
      * 
      * @param {object} commands 
-     * @returns 
+     * @returns {CommandHandler}
      */
     setDisableDefaultCommands(commands) {
         if (typeof commands !== 'object') throw new TypeError('Disable default commands must be array!');
@@ -542,7 +665,7 @@ class CommandHandler {
     /**
      * 
      * @param {string} command 
-     * @returns 
+     * @returns {boolean}
      */
     isCommandHas(command) {
         let has
@@ -561,14 +684,14 @@ class CommandHandler {
     /**
         * 
         * @param {string} command 
-        * @returns 
+        * @returns {command}
         */
     getCommand(command) {
         let cmd;
 
         let commands = this.commands;
         for (let i = 0; i < commands.size; i++) {
-            let command = commands.first(i + 1)[i].name
+            let commandNamee = commands.first(i + 1)[i].name
             let cmd = commands.first(i + 1)[i];
             if (commandNamee === command) {
                 return cmd;
@@ -586,7 +709,7 @@ class CommandHandler {
     /**
          * 
          * @param {string} dir 
-         * @returns 
+         * @returns {CommandHandler}
          */
     setCommandsDir(dir) {
         if (typeof dir !== 'string') throw new TypeError('Directory must be string!');
@@ -595,13 +718,42 @@ class CommandHandler {
 
         return this
     }
+    /**
+     * 
+     * @param {message.guild|any} guild
+     * @param {string} command
+     * @returns {boolean} 
+     */
+    async isCommandDisabled(guild, command) {
+        const disableCommandsSchema = require('./models/command-schema');
+        let result = await disableCommandsSchema.findOne({ guildID: guild.id, command: command });
+        let returns = false
+        if (result !== null) returns = true
+        return returns
+    }
+    /**
+     * 
+     * @param {message.guild|any} guild 
+     * @param {string} command 
+     * @param {any} channel 
+     * @returns {boolean} 
+     */
+    async isChannelDisabled(guild, command, channel) {
+        const ChannelSchema = require('./models/channel-schema');
+        let output = false
+        let result = await ChannelSchema.findOne({ guildID: guild.id, command: command });
+        if (result === null) return output;
+        if (result !== null && result.channels !== null && result.channels.includes(channel.id)) output = true;
+
+        return output
+    }
     //////////////////////////////////////////////////////////////////////
 
     //mongoDB
     /**
      * 
      * @param {object} dbOptions 
-     * @returns 
+     * @returns {CommandHandler}
      */
     setDbOptions(dbOptions) {
         if (typeof dbOptions !== 'object') throw new TypeError('DB options must be object!');
@@ -611,6 +763,10 @@ class CommandHandler {
         return this;
 
     }
+    /**
+     * 
+     * @returns {boolean}
+     */
     isDBConnected() {
         let connect = false
 
@@ -618,13 +774,17 @@ class CommandHandler {
 
         return connect;
     }
+    /**
+     * 
+     * @returns {uri}
+     */
     getDBConnectURI() {
         return this.mongoURI;
     }
     /**
     * 
-    * @param {string} uri 
-    * @returns 
+    * @param {string} uri
+    * @returns {CommandHandler}
     */
     setMongoURI(uri) {
         if (typeof uri !== 'string') throw new TypeError('mongoDB uri must be string!');

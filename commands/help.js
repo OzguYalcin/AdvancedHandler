@@ -5,15 +5,16 @@ module.exports = {
     category: 'Help',
     description: "Displays this bot's commands",
     maxArgs: 1,
-    cooldown: '5s',
+    cooldown: '3s',
     expectedArgs: '[command]',
-    requiredBotPermissions: ['SEND_MESSAGES'],
+    requiredBotPermissions: ['SEND_MESSAGES', 'ADD_REACTIONS'],
     callback: async ({ client, message, args, prefix, instance }) => {
         let helpSettings = instance.helpSettings;
+        let allCommands = instance.commands;
+        let allCategories = instance.categories;
+        let authoritativePerms = helpSettings.authoritativePerms;
         if (!args[0]) {
-            let allCommands = instance.commands;
-            let allCategories = instance.categories;
-            let authoritativePerms = helpSettings.authoritativePerms;
+
             let isHavePerm = false
             for (let i = 0; i < authoritativePerms.length; i++) {
                 let perm = authoritativePerms[i];
@@ -46,6 +47,7 @@ module.exports = {
                     embed.addField(`${emoji ? `**${emoji} - ${category[1].name}**` : `**${category[1].name}**`}`, text);
                 }
                 return message.channel.send({ embed: embed });
+
             } else {
                 let categories = allCategories.filter(c => c.hidden === false);
                 const embed = new DiscordJS.MessageEmbed()
