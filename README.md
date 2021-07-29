@@ -241,7 +241,7 @@ description: Enables or disables a command (or all) for a channel or some channe
 usage: {PREFIX}channel [enable | disable] [command | all] [tag channel | tag channels] <br />
 
 ## Command
-name: Command
+name: Command <br />
 aliases: null <br />
 category: Configuration <br />
 description: Makes a command enable or disable for this guild <br />
