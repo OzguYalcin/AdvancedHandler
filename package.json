@@ -1,6 +1,6 @@
 {
   "name": "advancedhandler",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "description": "Advanced DiscordJS Handler",
   "main": "index.js",
   "scripts": {

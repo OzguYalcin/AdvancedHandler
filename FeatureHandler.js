@@ -19,7 +19,7 @@ class FeatureHandler {
          
         this.featuresDir = featuresDir
 
-        var files = getAllFiles(this.featuresDir);
+        var files = getAllFiles(path.join(require.main.path, this.featuresDir));
             var amount = files.length;
             if (amount <= 0) {
                 return;
@@ -27,11 +27,6 @@ class FeatureHandler {
             console.log("AdvancedHandler > Loaded " + amount + " feature" + (amount === 1 ? "" : "s") + ".");
             for (var _c = 0, files_1 = files; _c < files_1.length; _c++) {
                 var _d = files_1[_c], file = _d[0], fileName = _d[1];
-                file = path.join(__dirname, _d[0])
-                const C = file.split("\\")[0];
-                const Path = file.split("\\")[1];
-                file = `${C}\\${Path}\\${_d[0]}`
-
                 const command = require(file);
 
                 command(client);

@@ -178,9 +178,9 @@ await getPrefix(guild);
 
 //Commands
 isCommandHas(command);
-getCommand(command)
-await isCommandDisabled(guild, command)
-await isChannelDisabled(guild, command, channel)
+getCommand(command);
+await isCommandDisabled(guild, command);
+await isChannelDisabled(guild, command, channel);
 //channel is not the channel name channel collection.
 
 //mongoDB
@@ -188,32 +188,27 @@ getDBConnectURI();
 isDBConnected();
 
 //message
-await getMessage(guild, messageID, options)
+await getMessage(guild, messageID, options);
 //options example:
-//{
-//     PREFIX:prefix,
-//     COOLDOWN: cooldown,
-//     LANG: language,
-//     COMMAND: command,
-//     ARGUMENTS: arguments,
-//     ROLE: role,
-//     PERM: permission,
-//     CHANNELS: channels,
-//     CHANNEL: channel
-// }
-//Return the message from messages path and it replace the "prefix, cooldown, language, command, arguments, role, perm, channels, channel"
-//If there are variables in the text you want to write, here are the equations:
-// {PREFIX} = specified prefix.
-// {COOLDOWN} = specified cooldown.
-// {LANG} = specified language.
-// {COMMAND} = specified command name.
-// {ARGUMENTS} = specified expectedArgs.
-// {ROLE} = specified role.
-// {PERM} = specified permission.
-// {CHANNELS} = specified some channels.
-// {CHANNEL} = specified a channel.
+//If you write PREFIX in options it will automaticly search {PREFIX} in the text and replace it to the value.
+//If your data is object like:
+{
+    "HELP": {
+        "TITLE": {
+            "en": "Help Menu",
+            "tr": "Help Menü"
+        },
+        "DESC": {
+            "en": "Here are all my commands",
+            "tr": "İşte bütün komutlarım" 
+        }
+    }
+}
+//For get "TITLE":
+await getMessage(guild, "HELP.TITLE");
+//The text after each dot represents a data in the object.
 
-await newSyntaxError(guild, command, args)
+await newSyntaxError(guild, command, args);
 //example
 //If you use like this: 
 //await newSyntaxError(guild, "required-roles", "[add | remove] [command name] [role id | mention role]")
@@ -241,7 +236,7 @@ description: Enables or disables a command (or all) for a channel or some channe
 usage: {PREFIX}channel [enable | disable] [command | all] [tag channel | tag channels] <br />
 
 ## Command
-name: Command <br />
+name: Command
 aliases: null <br />
 category: Configuration <br />
 description: Makes a command enable or disable for this guild <br />

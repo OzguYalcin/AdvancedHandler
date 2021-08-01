@@ -4,9 +4,9 @@ const permissions = require('./permissions');
 const registerCommand = (filePath, fileName, instance, disableCommands) => {
 
     const command = require(filePath);
-
-    let commandName = command.name || fileName;
-
+    if(!command.name) command.name = fileName
+    let commandName = command.name;
+    
     let callbackCounter = 0;
     if (command.callback) callbackCounter++
     if (command.execute) callbackCounter++
@@ -60,7 +60,6 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
     if (commandName && typeof commandName !== 'string') {
         throw new TypeError('Command name must be string!');
     } else if (commandName && typeof commandName === 'string') {
-        command.secondName = commandName
         instance.commands.set(commandName, command)
     }
 

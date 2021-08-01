@@ -37,7 +37,7 @@ module.exports = {
                     let text = "";
                     if (commands.size === 0) continue
                     commands.forEach(command => {
-                        text += `\`${command.name || command.secondName}\` `
+                        text += `\`${command.name}\` `
                     })
 
                     let emoji = category[1].emoji;
@@ -61,7 +61,7 @@ module.exports = {
                     let text = "";
                     if (commands.size === 0) continue
                     commands.forEach(command => {
-                        text += `\`${command.name || command.secondName}\` `
+                        text += `\`${command.name}\` `
                     })
 
                     let emoji = category[1].emoji;
@@ -85,9 +85,9 @@ module.exports = {
             const embed = new DiscordJS.MessageEmbed()
                 .setTitle('Command Details:')
                 .setColor(helpSettings.embed.color)
-                .addField("Command:", `\`${command.name || command.secondName}\``)
+                .addField("Command:", `\`${command.name}\``)
                 .addField("Aliases:", `${command.aliases ? `${aliasesText}` : `No aliases for this command.`}`)
-                .addField("Usage:", `\`${prefix}${command.name || command.secondName} ${command.expectedArgs ? `${command.expectedArgs}` : ""}\``)
+                .addField("Usage:", `\`${prefix}${command.name} ${command.expectedArgs ? `${command.expectedArgs}` : ""}\``)
                 .addField("Category:", `${command.category ? `\`${command.category}\`` : `No category for this command.`}`)
                 .addField("Description:", `${command.description ? `\`${command.description}\`` : `No description for this command.`}`)
 

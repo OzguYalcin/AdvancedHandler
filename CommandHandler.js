@@ -2,7 +2,6 @@ const getAllFiles = require('./get-all-files');
 const DiscordJS = require('discord.js');
 const path = require('path');
 const fs = require('fs');
-const permissions = require('./permissions');
 const mongoose = require('mongoose');
 const mongo = require('./mongo');
 const ms = require('ms');
@@ -64,7 +63,7 @@ class CommandHandler {
         }
         if (fs.existsSync(this.commandsDir)) {
 
-            var files = getAllFiles(this.commandsDir);
+            var files = getAllFiles(path.join(require.main.path, this.commandsDir));
             var amount = files.length;
             if (amount <= 0) {
                 return;
@@ -72,11 +71,7 @@ class CommandHandler {
             console.log("AdvancedHandler > Loaded " + amount + " command" + (amount === 1 ? "" : "s") + ".");
             for (var _c = 0, files_1 = files; _c < files_1.length; _c++) {
                 var _d = files_1[_c], file = _d[0], fileName = _d[1];
-                file = path.join(__dirname, _d[0])
-                const C = file.split("\\")[0];
-                const Path = file.split("\\")[1];
-                file = `${C}\\${Path}\\${_d[0]}`
-                registerCommand(file, fileName, this, this.disableCommands);
+                registerCommand(`${file}`, fileName, this, this.disableCommands);
             }
 
             const defaultFiles = getAllFiles(path.join(__dirname, 'commands'));
@@ -92,7 +87,7 @@ class CommandHandler {
         } else throw new ('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
 
         client.on('message', async message => {
-            let prefix = message.guild ? await this.getPrefix(message.guild) : this.defaultPrefix;
+            let prefix = await this.getPrefix(message.guild)
             this.prefix = prefix;
             if (!message.content.startsWith(prefix)) return;
 
@@ -112,52 +107,47 @@ class CommandHandler {
             }
 
             if (message.guild && this.isDBConnected()) {
-                if (await this.isCommandDisabled(message.guild, command.name ? command.name : command.secondName)) {
+                if (await this.isCommandDisabled(message.guild, command.name)) {
                     return message.reply(await this.getMessage(message.guild, "COMMAND_DISABLED"))
                 }
 
-                if (await this.isChannelDisabled(message.guild, command.name ? command.name : command.secondName, message.channel)) {
+                if (await this.isChannelDisabled(message.guild, command.name, message.channel)) {
                     return message.reply(await this.getMessage(message.guild, "CHANNEL_DISABLED"))
                 }
             }
 
             if (message.guild) {
-                if (command.testOnly && !this.testServers && this.showWarns) {
-                    console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"testOnly\" set to true, but no test servers are defined.")
+                if (command.testOnly && !this.testServers) {
+                    if (this.showWarns) console.warn("AdvancedHandler > Command \"" + command.name + "\" has \"testOnly\" set to true, but no test servers are defined.")
                     return message.reply(await this.getMessage(message.guild, "SOMETHINK_WENT_WRONG"));
-                } else if (command.testOnly && typeof this.testServers === 'object') {
+                } else if (command.testOnly && this.testServers) {
                     let isGuildTest = false;
 
-                    this.testServers.forEach((item) => {
-                        if (item === message.guild.id) isGuildTest = true;
-                    })
+                    if (this.testServers === message.guild.id || this.testServers.includes(message.guild.id)) isGuildTest = true;
 
-                    if (isGuildTest === false) {
+                    if (!isGuildTest) {
                         return message.reply(await this.getMessage(message.guild, "TEST_ONLY"));
                     }
                 }
-            } else if (!message.guild && command.testOnly && typeof this.testServers === 'string') {
+            } else if (!message.guild && command.testOnly) {
                 return message.reply(await this.getMessage(message.guild, "TEST_ONLY"));
             }
 
-            if (command.ownersOnly && !this.botOwners && this.showWarns) {
-                console.warn("AdvancedHandler > Command \"" + firstElement + "\" has \"ownersOnly\" set to true, but no owners are defined.")
+            if (command.ownersOnly && !this.botOwners) {
+                if (this.showWarns) console.warn("AdvancedHandler > Command \"" + command.name || command.secondName + "\" has \"ownersOnly\" set to true, but no owners are defined.")
                 return message.reply(await this.getMessage(message.guild, "SOMETHINK_WENT_WRONG"));
-            } else if (command.testOnly && typeof this.botOwners === 'object') {
+            } else if (command.ownersOnly) {
                 let isOwner = false;
 
-                this.botOwners.forEach(item => {
-                    if (item === message.author.id) isOwner = true;
-                })
-                if (isOwner === false) {
+                if (this.botOwners === message.author.id || this.botOwners.includes(message.author.id)) isOwner = true;
+                if (!isOwner) {
                     return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"));
                 }
-            } else if (command.ownersOnly && typeof this.botOwners === 'string' && this.botOwners !== message.author.id) {
-                return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"));
             }
-            if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) {
+
+            if (this.isDBConnected()) {
                 const reqRolesSchema = require('./models/required-roles-schema');
-                const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: firstElement }, { guildID: message.guild.id, command: firstElement }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: command.name }, { guildID: message.guild.id, command: command.name }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 let roleResult = [];
                 if (reqRoles.requiredRoles) {
                     if (typeof reqRoles.requiredRoles === 'object') {
@@ -178,7 +168,7 @@ class CommandHandler {
                 }
             }
 
-            const permissions = command.requiredPermissions || command.permissions;
+            const permissions = command.requiredPermissions;
             let permResult = [];
             if (permissions && typeof permissions === 'object') {
                 for (let i = 0; i < permissions.length; i++) {
@@ -245,6 +235,7 @@ class CommandHandler {
 
             const cooldownSchema = require('./models/cooldown-schema');
             if (this.isDBConnected() && commandCooldown) {
+                if (!message.guild) message.guild = { id: "dm" }
                 let cooldownFinishTime = await cooldownSchema.findOneAndUpdate({ _id: `${message.guild.id}-${message.author.id}-${firstElement}`, name: firstElement }, { _id: `${message.guild.id}-${message.author.id}-${firstElement}` }, { upsert: true });
 
                 if (cooldownFinishTime) {
@@ -343,44 +334,45 @@ class CommandHandler {
         return this;
     }
     /**
-    * @param {message.guild|any} guild
-    * @param {string} messageID 
-    * @param {object} options
-    * @returns {string}
-    * @expamle 
-    * await instance.getMessage(message.guild, "MESSAGE ID", {
-    * PREFIX: prefix
-    * })
-    */
+         * @param {message.guild|any} guild
+         * @param {string} messageID 
+         * @param {object} options
+         * @returns {string}
+         * @expamle 
+         * await instance.getMessage(message.guild, "MESSAGE ID", {
+         * PREFIX: prefix
+         * })
+         */
     async getMessage(guild, messageID, options = {}) {
-        let message;
+        let result;
         let lang = await this.getLanguage(guild);
         if (typeof messageID !== 'string') throw new TypeError('messageID must be a string!');
         const path = this.messagesPath;
 
         const messagesPath = JSON.parse(fs.readFileSync(path, 'utf8'));
-        message = messagesPath[messageID];
 
-        if (!message) {
+        if (messageID.includes(".")) {
+            let m = messageID.split(".");
+            result = messagesPath[m[0]];
+            for (let i = 1; i < m.length; i++) {
+                let t = m[i];
+                result = result[t]
+            }
+        } else {
+            result = messagesPath[messageID];
+        }
+        result = result[lang];
+        for (var i = 0, a = Object.keys(options); i < a.length; i++) {
+            var key = a[i];
+            var expression = new RegExp("{" + key + "}", 'g');
+            result = result.replace(expression, options[key]);
+        }
+        if (!result) {
             throw new Error("Unkown message ID!");
         }
+        return result;
 
-        return message[lang]
-            .replace(/{CHANNELS}/g, options.CHANNELS)
-            .replace(/{CHANNEL}/g, options.CHANNEL)
-            .replace(/{EMOJI}/g, options.EMOJI)
-            .replace(/{CATEGORY}/g, options.CATEGORY)
-            .replace(/{PREFIX}/g, options.PREFIX)
-            .replace(/{LANG}/g, options.LANG)
-            .replace(/{COMMAND}/g, options.COMMAND)
-            .replace(/{ARGUMENTS}/g, options.ARGUMENTS)
-            .replace(/{ROLE}/g, options.ROLE)
-            .replace(/{PERM}/g, options.PERM)
-            .replace(/{COOLDOWN}/g, options.COOLDOWN);
     }
-
-
-
 
     /**
      * @param {message.guild|any} guild
@@ -621,17 +613,21 @@ class CommandHandler {
     async getPrefix(guild) {
         const prefixSchema = require('./models/prefix-schema');
         let prefix;
-        if (this.isDBConnected()) {
-            const result = await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
-            if (!result.prefix) {
-                result.prefix = this.defaultPrefix; await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id, prefix: this.defaultPrefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
-            };
+        if (guild) {
+            if (this.isDBConnected()) {
+                const result = await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                if (!result.prefix) {
+                    result.prefix = this.defaultPrefix; await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id, prefix: this.defaultPrefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                };
 
-            prefix = result.prefix;
+                prefix = result.prefix;
 
-        } else {
-            prefix = this.defaultPrefix;
+            } else {
+                prefix = this.defaultPrefix;
+            }
         }
+        else prefix = this.defaultPrefix;
+
         return prefix;
     }
     /**

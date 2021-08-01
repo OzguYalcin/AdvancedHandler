@@ -1,146 +1,146 @@
 {
-    "BOT_OWNERS_ONLY": {
-        "en": "Only the bot owner can run this command.",
-        "tr": "Bu komutu yalnızca bot sahibi çalıştırabilir."
-    },
-    "GUILD_ONLY_COMMAND": {
-        "en": "This command can only be used within a server.",
-        "tr": "Bu komut yalnızca bir sunucu içinde kullanılabilir."
-    },
-    "TEST_ONLY": {
-        "en": "This command can only be used on test servers.",
-        "tr": "Bu komut sadece test sunucusunda kullanılabilir."
-    },
-    "MISSING_PERMISSION": {
-        "en": "You must have the \"{PERM}\" permission in order to use this command.",
-        "tr": "Bu komutu kullanabilmek için \"{PERM}\" iznine sahip olmalısınız."
-    },
-    "MISSIN_BOT_PERMISSION": {
-        "en": "I must need the \"{PERM}\" permission in order to use this command.",
-        "tr": "Bu komutu kullanabilmen için \"{PERM}\" iznine ihtiyacım var."
-    },
-    "NO_DATABASE_FOUND": {
-        "en": "No database connection found!",
-        "tr": "Bir veritabanı bağlantısı bulunamadı!"
-    },
-    "SET_PREFIX": {
-        "en": "Set the command prefix to\"{PREFIX}\".",
-        "tr": "Komut öneki \"{PREFIX}\" olarak ayarlandı."
-    },
-    "CURRENT_PREFIX_ALREADY_THIS": {
-        "en": "Current prefix already \"{PREFIX}\" .",
-        "tr": "Geçerli önek zaten \"{PREFIX}\" ."
-    },
-    "CANNOT_SET_PREFIX_IN_DMS": {
-        "en": "You cannot set a prefix in a private message.",
-        "tr": "Özel bir mesajda önek belirleyemezsiniz."
-    },
-    "SYNTAX_ERROR": {
-        "en": "Incorrect usage! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\"",
-        "tr": "Yanlış kullanım! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
-    },
-    "UNKOWN_COMMAND": {
-        "en": "Could not find command \"{COMMAND}\"!",
-        "tr": "\"{COMMAND}\" komutu bulunamadı!"
-    },
-    "ADDED_REQUIRED_ROLE": {
-        "en": "Added role \"{ROLE}\" to command \"{COMMAND}\".",
-        "tr": "\"{COMMAND}\" komutuna \"{ROLE}\" rolü eklendi"
-    },
-    "REMOVED_REQUIRED_ROLE": {
-        "en": "Removed role \"{ROLE}\" to command \"{COMMAND}\".",
-        "tr": "\"{COMMAND}\" komutundan \"{ROLE}\" rolü çıkartıldı."
-    },
-    "REQUIRED_ROLE_ALREADY_ADDED": {
-        "en": "\"{ROLE}\" already added to command \"{COMMAND}\".",
-        "tr": "\"{ROLE}\" rolü \"{COMMAND}\" komutuna zaten eklenmiş."
-    },
-    "REQUIRED_ROLE_ALREADY_REMOVED": {
-        "en": "\"{ROLE}\" already removed to command \"{COMMAND}\".",
-        "tr": "\"{ROLE}\" rolü \"{COMMAND}\" komutundan zaten çıkartılmış."
-    },
-    "MISSING_ROLES": {
-        "en": "You do not have the required roles to use this command! You need one of the following: \"{ROLE}\".",
-        "tr": "Bu komutu kullanmak için gerekli rollere sahip değilsiniz! Aşağıdakilerden birine ihtiyacınız var: \"{ROLE}\"."
-    },
-    "COOLDOWN": {
-        "en": "You must wait {COOLDOWN} before using that command again.",
-        "tr": "Komutu kullanmadan önce {COOLDOWN} kadar süre beklemelisiniz."
-    },
-    "HELP_TITLE": {
-        "en": "Need help? Here are all of my commands:",
-        "tr": "Yardımamı ihtiyacın var? İşte tüm komutlarım:"
-    },
-    "HELP_DESCRIPTION": {
-        "en": "Use {PREFIX}help followed by a command name to get more additional information on a command. For example: \"{PREFIX}help prefix\".",
-        "tr": "Bir komut hakkında daha fazla bilgi almak için {PREFIX}help ve ardından bir komut adını kullanın. Örneğin: \"{PREFIX}help prefix\"."
-    },
-    "SOMETHINK_WENT_WRONG": {
-        "en": "Something went wrong and this was reported to the authorities.",
-        "tr": "Bir şeyler ters gitti ve bu yetkililere bildirildi."
-    },
-    "LANGUAGE_NOT_SUPPORTED": {
-        "en": "This bot does not have support for \"{LANG}\" at this time.",
-        "tr": "Üzgünüz. \"{LANG}\" dili şimdilik desteklenmemekte."
-    },
-    "CURRENT_LANGUAGE_ALREADY_THIS": {
-        "en": "The current language is already \"{LANG}\".",
-        "tr": "Geçerli dil zaten \"{LANG}\"."
-    },
-    "NEW_LANGUAGE": {
-        "en": "Language set to \"{LANG}\".",
-        "tr": "Dil \"{LANG}\" olarak ayarlandı."
-    },
-    "COMMAND_ALREADY_ENABLED": {
-        "en": "This command is already enabled for this server.",
-        "tr": "Bu komut bu sunucu için zaten etkinleştirilmiş."
-    },
-    "COMMAND_ALREADY_DISABLED": {
-        "en": "This command is already disabled for this server.",
-        "tr": "Bu komut bu sunucu için zaten devre dışı."
-    },
-    "COMMAND_NOW_ENABLED": {
-        "en": "\"{COMMAND}\" command is now enabled.",
-        "tr": "\"{COMMAND}\" komutu etkin."
-    },
-    "COMMAND_NOW_DISABLED": {
-        "en": "\"{COMMAND}\" command is now disabled.",
-        "tr": "\"{COMMAND}\" komutu devre dışı."
-    },
-    "COMMAND_DISABLED": {
-        "en": "This command is disabled for this server.",
-        "tr": "Bu komut bu sunucu için devre dışı."
-    },
-    "THIS_COMMAND_CAN_NOT_BE_DISABLE": {
-        "en": "\"{COMMAND}\" command can not be disabled!",
-        "tr": "\"{COMMAND}\" komutu devre dışı bırakılamaz!"
-    },
-    "THIS_CHANNEL_ALREADY_DISABLED": {
-        "en": "Channel \"{CHANNEL}\" is already disabled for \"{COMMAND}\" command.",
-        "tr": "\"{CHANNEL}\" kanalı zaten \"{COMMAND}\" komutu için devre dışı."
-    },
-    "THIS_CHANNEL_ALREADY_ENABLED": {
-        "en": "Channel \"{CHANNEL}\" is already enabled for \"{COMMAND}\" command.",
-        "tr": "\"{CHANNEL}\" kanalı zaten \"{COMMAND}\" komutu için etkinleştirilmiş."
-    },
-    "CHANNEL_NOW_ENABLE": {
-        "en": "\"{CHANNELS}\" channels are enabled for \"{COMMAND}\" command.",
-        "tr": "\"{CHANNELS}\" kanalları \"{COMMAND}\" komutu için etkinleştirildi."
-    },
-    "CHANNEL_NOW_DISABLE": {
-        "en": "\"{CHANNELS}\" channels are disabled for \"{COMMAND}\" command.",
-        "tr": "\"{CHANNELS}\" kanalları \"{COMMAND}\" komutu için devre dışı."
-    },
-    "CHANNEL_NOW_ENABLE_ALL": {
-        "en": "\"{CHANNELS}\" channels are enabled for all commands.",
-        "tr": "\"{CHANNELS}\" kanalları bütün komutlar için etkinleştirildi."
-    },
-    "CHANNEL_NOW_DISABLE_ALL": {
-        "en": "\"{CHANNELS}\" channels are disabled for all commands. (without \"channel\" command)",
-        "tr": "\"{CHANNELS}\" kanalları bütün komutlar için devre dışı. (\"channel\" komutu hariç)"
-    },
-    "CHANNEL_DISABLED": {
-        "en": "This channel is disabled for this command.",
-        "tr": "Bu kanal bu komut için devre dışı."
-    }
+ "BOT_OWNERS_ONLY": {
+  "en": "Only the bot owner can run this command.",
+  "tr": "Bu komutu yalnızca bot sahibi çalıştırabilir."
+ },
+ "GUILD_ONLY_COMMAND": {
+  "en": "This command can only be used within a server.",
+  "tr": "Bu komut yalnızca bir sunucu içinde kullanılabilir."
+ },
+ "TEST_ONLY": {
+  "en": "This command can only be used on test servers.",
+  "tr": "Bu komut sadece test sunucusunda kullanılabilir."
+ },
+ "MISSING_PERMISSION": {
+  "en": "You must have the \"{PERM}\" permission in order to use this command.",
+  "tr": "Bu komutu kullanabilmek için \"{PERM}\" iznine sahip olmalısınız."
+ },
+ "MISSIN_BOT_PERMISSION": {
+  "en": "I must need the \"{PERM}\" permission in order to use this command.",
+  "tr": "Bu komutu kullanabilmen için \"{PERM}\" iznine ihtiyacım var."
+ },
+ "NO_DATABASE_FOUND": {
+  "en": "No database connection found!",
+  "tr": "Bir veritabanı bağlantısı bulunamadı!"
+ },
+ "SET_PREFIX": {
+  "en": "Set the command prefix to\"{PREFIX}\".",
+  "tr": "Komut öneki \"{PREFIX}\" olarak ayarlandı."
+ },
+ "CURRENT_PREFIX_ALREADY_THIS": {
+  "en": "Current prefix already \"{PREFIX}\" .",
+  "tr": "Geçerli önek zaten \"{PREFIX}\" ."
+ },
+ "CANNOT_SET_PREFIX_IN_DMS": {
+  "en": "You cannot set a prefix in a private message.",
+  "tr": "Özel bir mesajda önek belirleyemezsiniz."
+ },
+ "SYNTAX_ERROR": {
+  "en": "Incorrect usage! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\"",
+  "tr": "Yanlış kullanım! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
+ },
+ "UNKOWN_COMMAND": {
+  "en": "Could not find command \"{COMMAND}\"!",
+  "tr": "\"{COMMAND}\" komutu bulunamadı!"
+ },
+ "ADDED_REQUIRED_ROLE": {
+  "en": "Added role \"{ROLE}\" to command \"{COMMAND}\".",
+  "tr": "\"{COMMAND}\" komutuna \"{ROLE}\" rolü eklendi"
+ },
+ "REMOVED_REQUIRED_ROLE": {
+  "en": "Removed role \"{ROLE}\" to command \"{COMMAND}\".",
+  "tr": "\"{COMMAND}\" komutundan \"{ROLE}\" rolü çıkartıldı."
+ },
+ "REQUIRED_ROLE_ALREADY_ADDED": {
+  "en": "\"{ROLE}\" already added to command \"{COMMAND}\".",
+  "tr": "\"{ROLE}\" rolü \"{COMMAND}\" komutuna zaten eklenmiş."
+ },
+ "REQUIRED_ROLE_ALREADY_REMOVED": {
+  "en": "\"{ROLE}\" already removed to command \"{COMMAND}\".",
+  "tr": "\"{ROLE}\" rolü \"{COMMAND}\" komutundan zaten çıkartılmış."
+ },
+ "MISSING_ROLES": {
+  "en": "You do not have the required roles to use this command! You need one of the following: \"{ROLE}\".",
+  "tr": "Bu komutu kullanmak için gerekli rollere sahip değilsiniz! Aşağıdakilerden birine ihtiyacınız var: \"{ROLE}\"."
+ },
+ "COOLDOWN": {
+  "en": "You must wait {COOLDOWN} before using that command again.",
+  "tr": "Komutu kullanmadan önce {COOLDOWN} kadar süre beklemelisiniz."
+ },
+ "HELP_TITLE": {
+  "en": "Need help? Here are all of my commands:",
+  "tr": "Yardımamı ihtiyacın var? İşte tüm komutlarım:"
+ },
+ "HELP_DESCRIPTION": {
+  "en": "Use {PREFIX}help followed by a command name to get more additional information on a command. For example: \"{PREFIX}help prefix\".",
+  "tr": "Bir komut hakkında daha fazla bilgi almak için {PREFIX}help ve ardından bir komut adını kullanın. Örneğin: \"{PREFIX}help prefix\"."
+ },
+ "SOMETHINK_WENT_WRONG": {
+  "en": "Something went wrong and this was reported to the authorities.",
+  "tr": "Bir şeyler ters gitti ve bu yetkililere bildirildi."
+ },
+ "LANGUAGE_NOT_SUPPORTED": {
+  "en": "This bot does not have support for \"{LANG}\" at this time.",
+  "tr": "Üzgünüz. \"{LANG}\" dili şimdilik desteklenmemekte."
+ },
+ "CURRENT_LANGUAGE_ALREADY_THIS": {
+  "en": "The current language is already \"{LANG}\".",
+  "tr": "Geçerli dil zaten \"{LANG}\"."
+ },
+ "NEW_LANGUAGE": {
+  "en": "Language set to \"{LANG}\".",
+  "tr": "Dil \"{LANG}\" olarak ayarlandı."
+ },
+ "COMMAND_ALREADY_ENABLED": {
+  "en": "This command is already enabled for this server.",
+  "tr": "Bu komut bu sunucu için zaten etkinleştirilmiş."
+ },
+ "COMMAND_ALREADY_DISABLED": {
+  "en": "This command is already disabled for this server.",
+  "tr": "Bu komut bu sunucu için zaten devre dışı."
+ },
+ "COMMAND_NOW_ENABLED": {
+  "en": "\"{COMMAND}\" command is now enabled.",
+  "tr": "\"{COMMAND}\" komutu etkin."
+ },
+ "COMMAND_NOW_DISABLED": {
+  "en": "\"{COMMAND}\" command is now disabled.",
+  "tr": "\"{COMMAND}\" komutu devre dışı."
+ },
+ "COMMAND_DISABLED": {
+  "en": "This command is disabled for this server.",
+  "tr": "Bu komut bu sunucu için devre dışı."
+ },
+ "THIS_COMMAND_CAN_NOT_BE_DISABLE": {
+  "en": "\"{COMMAND}\" command can not be disabled!",
+  "tr": "\"{COMMAND}\" komutu devre dışı bırakılamaz!"
+ },
+ "THIS_CHANNEL_ALREADY_DISABLED": {
+  "en": "Channel \"{CHANNEL}\" is already disabled for \"{COMMAND}\" command.",
+  "tr": "\"{CHANNEL}\" kanalı zaten \"{COMMAND}\" komutu için devre dışı."
+ },
+ "THIS_CHANNEL_ALREADY_ENABLED": {
+  "en": "Channel \"{CHANNEL}\" is already enabled for \"{COMMAND}\" command.",
+  "tr": "\"{CHANNEL}\" kanalı zaten \"{COMMAND}\" komutu için etkinleştirilmiş."
+ },
+ "CHANNEL_NOW_ENABLE": {
+  "en": "\"{CHANNELS}\" channels are enabled for \"{COMMAND}\" command.",
+  "tr": "\"{CHANNELS}\" kanalları \"{COMMAND}\" komutu için etkinleştirildi."
+ },
+ "CHANNEL_NOW_DISABLE": {
+  "en": "\"{CHANNELS}\" channels are disabled for \"{COMMAND}\" command.",
+  "tr": "\"{CHANNELS}\" kanalları \"{COMMAND}\" komutu için devre dışı."
+ },
+ "CHANNEL_NOW_ENABLE_ALL": {
+  "en": "\"{CHANNELS}\" channels are enabled for all commands.",
+  "tr": "\"{CHANNELS}\" kanalları bütün komutlar için etkinleştirildi."
+ },
+ "CHANNEL_NOW_DISABLE_ALL": {
+  "en": "\"{CHANNELS}\" channels are disabled for all commands. (without \"channel\" command)",
+  "tr": "\"{CHANNELS}\" kanalları bütün komutlar için devre dışı. (\"channel\" komutu hariç)"
+ },
+ "CHANNEL_DISABLED": {
+  "en": "This channel is disabled for this command.",
+  "tr": "Bu kanal bu komut için devre dışı."
+ }
 }

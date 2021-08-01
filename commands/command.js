@@ -24,7 +24,7 @@ module.exports = {
         }
 
         command = instance.getCommand(args[1].toLocaleLowerCase());
-        const commandName = command.name ? command.name : command.secondName;
+        const commandName = command.name;
         let isCommandDisabled = await instance.isCommandDisabled(guild, commandName)
 
         if (choice === 'enable' && !isCommandDisabled) {

@@ -60,21 +60,22 @@ module.exports = {
                     COMMAND: command
                 }))
             } else {
+                command = instance.getCommand(command)
                 for (let c of channels) {
                     channel = c[1];
 
-                    let isChannelDisabled = await instance.isChannelDisabled(guild, command, channel);
+                    let isChannelDisabled = await instance.isChannelDisabled(guild, command.name, channel);
                     if (!isChannelDisabled) {
                         return message.reply(await instance.getMessage(guild, 'THIS_CHANNEL_ALREADY_ENABLED', {
                             CHANNEL: channel,
-                            COMMAND: command
+                            COMMAND: command.name
                         }))
                     }
 
                     await ChannelSchema.findOneAndUpdate(
                         {
                             guildID: guild.id,
-                            command: command
+                            command: command.name
                         }, {
                         $pull: {
                             channels: channel.id
@@ -85,7 +86,7 @@ module.exports = {
                 }
                 return message.reply(await instance.getMessage(guild, "CHANNEL_NOW_ENABLE", {
                     CHANNELS: args.slice(2).join(", "),
-                    COMMAND: command
+                    COMMAND: command.name
                 }))
 
             }
@@ -120,21 +121,23 @@ module.exports = {
                     COMMAND: command
                 }))
             } else {
+                command = instance.getCommand(command)
+
                 for (let c of channels) {
                     channel = c[1];
 
-                    let isChannelDisabled = await instance.isChannelDisabled(guild, command, channel);
+                    let isChannelDisabled = await instance.isChannelDisabled(guild, command.name, channel);
                     if (isChannelDisabled) {
                         return message.reply(await instance.getMessage(guild, 'THIS_CHANNEL_ALREADY_DISABLED', {
                             CHANNEL: channel,
-                            COMMAND: command
+                            COMMAND: command.name
                         }))
                     }
 
                     await ChannelSchema.findOneAndUpdate(
                         {
                             guildID: guild.id,
-                            command: command
+                            command: command.name
                         }, {
                         $addToSet: {
                             channels: channel.id
@@ -145,7 +148,7 @@ module.exports = {
                 }
                 return message.reply(await instance.getMessage(guild, "CHANNEL_NOW_DISABLE", {
                     CHANNELS: args.slice(2).join(", "),
-                    COMMAND: command
+                    COMMAND: command.name
                 }))
 
             }
