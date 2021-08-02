@@ -49,6 +49,7 @@ class CommandHandler {
         this.helpSettings = {};
         this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
         this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
+        this.categories.set("Statistics", { name: "Statistics", emoji: "📊", custom: false, hidden: false })
     }
 
     ////////////////////
@@ -735,9 +736,9 @@ class CommandHandler {
      * @returns {boolean} 
      */
     async isChannelDisabled(guild, command, channel) {
-        const ChannelSchema = require('./models/channel-schema');
+        const channelSchema = require('./models/channel-schema');
         let output = false
-        let result = await ChannelSchema.findOne({ guildID: guild.id, command: command });
+        let result = await channelSchema.findOne({ guildID: guild.id, command: command });
         if (result === null) return output;
         if (result !== null && result.channels !== null && result.channels.includes(channel.id)) output = true;
 
@@ -790,6 +791,68 @@ class CommandHandler {
         return this;
     }
     //////////////////////////////////////////////////////////////////////
+    //stats
+
+    /**
+     * 
+     * @param {any} guild
+     * @returns {boolean} 
+     */
+
+    async isStatsOn(guild) {
+        const statsSchema = require('./models/stats-schema');
+
+        let result = await statsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
+        let returns;
+        if (result.statu === true) returns = true
+        else if (result.statu === false || result.statu === null || !result.statu) returns = false;
+
+        return returns;
+    };
+
+    /**
+     * 
+     * @param {any} guild 
+     * @param {string} counter
+     * @returns {boolean} 
+     */
+    async isCounterOn(guild, counter) {
+        const statsSchema = require('./models/stats-schema');
+        
+        let result = await statsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
+
+        counter = counter.toLocaleLowerCase();
+
+        let ch = guild.channels.cache.get(result[counter].channelId);
+
+        let returns = false;
+
+        if(ch || ch !== null) returns = true;
+
+        return returns;
+    }
+    
+    /**
+     * 
+     * @param {any} guild
+     * @returns {boolean} 
+     */
+
+    async iStatsCategoryHas(guild) {
+        const statsSchema = require('./models/stats-schema');
+        
+        let result = await statsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
+
+        counter = counter.toLocaleLowerCase();
+
+        let ch = guild.channels.cache.get(result.categoryId);
+
+        let returns = false;
+
+        if(ch || ch !== null) returns = true;
+
+        return returns;
+    }
 }
 
 

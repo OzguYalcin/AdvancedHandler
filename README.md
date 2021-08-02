@@ -169,26 +169,26 @@ CommandHandler's "this".
 
 ```js
 //Lang
-await setLanguage(guild, language);
-await getLanguage(guild);
+await instance.setLanguage(guild, language);
+await instance.getLanguage(guild);
 
 //Prefix
-await setPrefix(guild, prefix);
-await getPrefix(guild);
+await instance.setPrefix(guild, prefix);
+await instance.getPrefix(guild);
 
 //Commands
-isCommandHas(command);
-getCommand(command);
-await isCommandDisabled(guild, command);
-await isChannelDisabled(guild, command, channel);
+instance.isCommandHas(command);
+instance.getCommand(command);
+await instance.isCommandDisabled(guild, command);
+await instance.isChannelDisabled(guild, command, channel);
 //channel is not the channel name channel collection.
 
 //mongoDB
-getDBConnectURI();
-isDBConnected();
+instance.getDBConnectURI();
+instance.isDBConnected();
 
 //message
-await getMessage(guild, messageID, options);
+await instance.getMessage(guild, messageID, options);
 //options example:
 //If you write PREFIX in options it will automaticly search {PREFIX} in the text and replace it to the value.
 //If your data is object like:
@@ -205,10 +205,10 @@ await getMessage(guild, messageID, options);
     }
 }
 //For get "TITLE":
-await getMessage(guild, "HELP.TITLE");
+await instance.getMessage(guild, "HELP.TITLE");
 //The text after each dot represents a data in the object.
 
-await newSyntaxError(guild, command, args);
+await instance.newSyntaxError(guild, command, args);
 //example
 //If you use like this: 
 //await newSyntaxError(guild, "required-roles", "[add | remove] [command name] [role id | mention role]")
@@ -269,3 +269,10 @@ aliases: reqroles, requiredroles, reqrole, required-role <br />
 category: Configuration <br />
 description: Specifies what role each command requires. <br />
 usage: {PREFIX}required-roles [add | remove] [command name] [role id | mention role] <br />
+
+## Stats
+name: stats <br />
+aliases: null <br />
+category: Statistics <br />
+description: Make stats on or off <br />
+usage: {PREFIX}stats [on | off] <br />
