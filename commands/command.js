@@ -4,7 +4,7 @@ module.exports = {
     name: 'command',
     minArgs: 2,
     maxArgs: 2,
-    expectedArgs: '[enable | disable] [command]',
+    expectedArgs: '<enable | disable> <command>',
     cooldown: '3s',
     category: 'Configuration',
     description: 'Makes a command enable or disable for this guild',
@@ -47,7 +47,7 @@ module.exports = {
 
             return message.reply(await instance.getMessage(guild, "COMMAND_NOW_DISABLED", { COMMAND: commandName }))
         } else if (!['enable', 'disable'].includes(choice)) {
-            return message.reply(await instance.newSyntaxError(guild, commandName, '[enable | disable] [command]'))
+            return message.reply(await instance.newSyntaxError("command", guild))
         } else {
             return message.reply(await instance.getMessage(guild, "SOMETHINK_WENT_WRONG"))
         }

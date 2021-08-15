@@ -1,11 +1,14 @@
 const prefixSchema = require('../models/prefix-schema');
+
+const { MessageEmbed } = require('discord.js')
+
 module.exports = {
     name: 'prefix',
     description: 'Displays or sets the prefix for the current guild',
     category: 'Configuration',
     minArgs: 1,
     maxArgs: 1,
-    expectedArgs: '[New Prefix]',
+    expectedArgs: '<prefix>',
     cooldown: '3s',
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
@@ -27,5 +30,10 @@ module.exports = {
         await instance.setPrefix(message.guild, pre);
 
         return message.channel.send(await instance.getMessage(message.guild, "SET_PREFIX", { PREFIX: pre }));
+    },
+    error:  async ({ error, message, instance }) => {
+        if (error === "GUILD_ONLY_COMMAND") {
+            return new MessageEmbed().setTitle("Test")
+        }
     }
 }

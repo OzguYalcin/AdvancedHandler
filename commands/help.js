@@ -7,7 +7,6 @@ module.exports = {
     maxArgs: 1,
     cooldown: '3s',
     expectedArgs: '[command]',
-    requiredBotPermissions: ['SEND_MESSAGES', 'ADD_REACTIONS'],
     callback: async ({ client, message, args, prefix, instance }) => {
         let helpSettings = instance.helpSettings;
         let allCommands = instance.commands;
@@ -22,8 +21,8 @@ module.exports = {
                 else continue;
             }
 
-            let title = await instance.getMessage(message.guild, "HELP_TITLE", { PREFIX: prefix })
-            let description = await instance.getMessage(message.guild, "HELP_DESCRIPTION", { PREFIX: prefix })
+            let title = await instance.getMessage(message.guild, "HELP.TITLE", { PREFIX: prefix })
+            let description = await instance.getMessage(message.guild, "HELP.DESCRIPTION", { PREFIX: prefix })
             if (isHavePerm === true) {
                 let categories = allCategories;
                 const embed = new DiscordJS.MessageEmbed()

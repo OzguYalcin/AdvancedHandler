@@ -5,7 +5,7 @@ const fs = require('fs')
 
 /**
  * @constructor
- * @param {DiscordJS.Client|any} client - DiscordJS Client
+ * @param {DiscordJS.Client} client - DiscordJS Client
  * @param {string} featuresDir - Features Directory
  * @example
  * new AdvancedHandler.FeatureHandler(client 'features');

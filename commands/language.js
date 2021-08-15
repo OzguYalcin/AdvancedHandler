@@ -4,7 +4,7 @@ module.exports = {
     cooldown: '10s',
     minArgs: 1,
     maxArgs: 1,
-    expectedArgs: "[lang]",
+    expectedArgs: "<lang>",
     guildOnly: true,
     requiredPermissions: ["ADMINISTRATOR"],
     category: "Configuration",

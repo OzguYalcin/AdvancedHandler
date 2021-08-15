@@ -1,0 +1,18 @@
+{
+    "all-members": {
+        "en": "All Members: {COUNT}",
+        "tr": "Tüm Üyeler: {COUNT}"
+    },
+    "members": {
+        "en": "Members: {COUNT}",
+        "tr": "Üyeler: {COUNT}"
+    },
+    "bots": {
+        "en":"Bots: {COUNT}",
+        "tr":"Botlar: {COUNT}"
+    },
+    "category": {
+        "en": "📊 Server Stats",
+        "tr": "📊 Sunucu İstatistikleri"
+    }
+}

@@ -15,7 +15,7 @@
         "en": "You must have the \"{PERM}\" permission in order to use this command.",
         "tr": "Bu komutu kullanabilmek için \"{PERM}\" iznine sahip olmalısınız."
     },
-    "MISSIN_BOT_PERMISSION": {
+    "MISSING_BOT_PERMISSION": {
         "en": "I must need the \"{PERM}\" permission in order to use this command.",
         "tr": "Bu komutu kullanabilmen için \"{PERM}\" iznine ihtiyacım var."
     },
@@ -24,7 +24,7 @@
         "tr": "Bir veritabanı bağlantısı bulunamadı!"
     },
     "SET_PREFIX": {
-        "en": "Set the command prefix to\"{PREFIX}\".",
+        "en": "Set the command prefix to \"{PREFIX}\".",
         "tr": "Komut öneki \"{PREFIX}\" olarak ayarlandı."
     },
     "CURRENT_PREFIX_ALREADY_THIS": {
@@ -67,13 +67,15 @@
         "en": "You must wait {COOLDOWN} before using that command again.",
         "tr": "Komutu kullanmadan önce {COOLDOWN} kadar süre beklemelisiniz."
     },
-    "HELP_TITLE": {
-        "en": "Need help? Here are all of my commands:",
-        "tr": "Yardımamı ihtiyacın var? İşte tüm komutlarım:"
-    },
-    "HELP_DESCRIPTION": {
-        "en": "Use {PREFIX}help followed by a command name to get more additional information on a command. For example: \"{PREFIX}help prefix\".",
-        "tr": "Bir komut hakkında daha fazla bilgi almak için {PREFIX}help ve ardından bir komut adını kullanın. Örneğin: \"{PREFIX}help prefix\"."
+    "HELP": {
+        "TITLE": {
+            "en": "Need help? Here are all of my commands:",
+            "tr": "Yardımamı ihtiyacın var? İşte tüm komutlarım:"
+        },
+        "DESCRIPTION": {
+            "en": "Use {PREFIX}help followed by a command name to get more additional information on a command. For example: \"{PREFIX}help prefix\".",
+            "tr": "Bir komut hakkında daha fazla bilgi almak için {PREFIX}help ve ardından bir komut adını kullanın. Örneğin: \"{PREFIX}help prefix\"."
+        }
     },
     "SOMETHINK_WENT_WRONG": {
         "en": "Something went wrong and this was reported to the authorities.",

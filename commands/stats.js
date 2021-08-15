@@ -4,9 +4,10 @@ module.exports = {
     name: 'stats',
     minArgs: 1,
     maxArgs: 1,
-    expectedArgs: "[on | off]",
+    expectedArgs: "<on | off>",
     category: "Statistics",
     description: "Make stats on or off.",
+    guildCooldown: "10m",
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
     requiredBotPermissions: ['MANAGE_GUILD'],
@@ -21,7 +22,7 @@ module.exports = {
         let result = await StatsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true })
 
         if (!["on", "off"].includes(choose)) {
-            return message.reply(await instance.newSyntaxError(guild, "stats", "[on | off]"));
+            return message.reply(await instance.newSyntaxError("stats", message.guild));
         }
 
         if (await instance.isStatsOn(guild) && choose === "on") {
@@ -32,7 +33,7 @@ module.exports = {
         }
 
         if (choose === "on") {
-            let category = await guild.channels.create("📊 Server Stats", {
+            let category = await guild.channels.create(await instance.getCounterName("category", guild), {
                 type: 'category', permissionOverwrites: [
                     {
                         id: message.guild.id,
@@ -44,7 +45,7 @@ module.exports = {
                     }
                 ],
             });
-            let AllMembersCh = await guild.channels.create("All Members: " + guild.memberCount, {
+            let AllMembersCh = await guild.channels.create(await instance.getCounterName("all-members", guild), {
                 type: 'voice',
                 parent: category,
                 permissionOverwrites: [
@@ -58,7 +59,7 @@ module.exports = {
                     }
                 ]
             });
-            let MembersCh = await guild.channels.create("Members: " + guild.members.cache.filter(m => !m.user.bot).size, {
+            let MembersCh = await guild.channels.create(await instance.getCounterName("members", guild), {
                 type: 'voice',
                 parent: category,
                 permissionOverwrites: [
@@ -72,7 +73,7 @@ module.exports = {
                     }
                 ]
             });
-            let BotsCh = await guild.channels.create("Bots: " + guild.members.cache.filter(m => m.user.bot).size, {
+            let BotsCh = await guild.channels.create(await instance.getCounterName("bots", guild), {
                 type: 'voice',
                 parent: category,
                 permissionOverwrites: [

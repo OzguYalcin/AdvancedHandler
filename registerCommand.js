@@ -1,6 +1,6 @@
 
 const permissions = require('./permissions');
-
+const ms = require('ms')
 const registerCommand = (filePath, fileName, instance, disableCommands) => {
 
     const command = require(filePath);
@@ -20,7 +20,12 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
         console.warn("AdvancedHandler > \"" + filePath + "\" Command have no name. Name set to \"" + fileName + "\".")
     };
 
+     let cooldownCounter = 0;
+     if(command.cooldown) cooldownCounter++;
+     if(command.userCooldown) cooldownCounter++;
+     if(command.guildCooldown) cooldownCounter++
 
+     if(cooldownCounter > 1) throw new TypeError(`${commandName} command must not have multiple cooldown types.`)
 
     const requiredPermissions = command.requiredPermissions || command.permissions;
     if (requiredPermissions && typeof requiredPermissions === 'object') {
@@ -54,6 +59,19 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
         throw new TypeError("Command located at \"" + filePath + "\" if have maxArgs must have expectedArgs")
     } else if (command.minArgs && !command.expectedArgs) {
         throw new TypeError("Command located at \"" + filePath + "\" if have minArgs must have expectedArgs")
+
+    }   
+
+    if(command.cooldown) {
+        if(ms(command.cooldown) >= 0) throw new Error("Command cooldown can not be 0(h, s, d, m)")
+    }
+
+    if(command.userCooldown) {
+        if(ms(command.userCooldown) >= 0) throw new Error("Command user cooldown can not be 0(h, s, d, m)")
+    }
+
+    if(command.guildCooldown) {
+        if(ms(command.guildCooldown) >= 1000 * 60) throw new Error("Command guild cooldown  must be bigger then 1 minute!")
 
     }
 

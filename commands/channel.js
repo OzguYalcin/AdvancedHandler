@@ -2,7 +2,7 @@ const ChannelSchema = require('../models/channel-schema');
 module.exports = {
     name: 'channel',
     minArgs: 3,
-    expectedArgs: '[enable | disable] [command | all] [tag channel | tag channels]',
+    expectedArgs: '<enable | disable> <command | all> <tag channel | tag channels>',
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
     category: 'Configuration',
@@ -24,7 +24,7 @@ module.exports = {
         }
 
         if (channels.size === 0) {
-            return message.reply(await instance.newSyntaxError(guild, "channel", '[enable | disable] [command | all] [tag channel | tag channels]'));
+            return message.reply(await instance.newSyntaxError("channel", guild));
         }
 
 
@@ -93,7 +93,7 @@ module.exports = {
         } else if (choice === 'disable') {
             if (command === 'all') {
                 instance.commands.forEach(async co => {
-                    if(co.name === 'channel') return;
+                    if (co.name === 'channel') return;
                     for (let c of channels) {
                         channel = c[1];
 
@@ -106,7 +106,7 @@ module.exports = {
                         await ChannelSchema.findOneAndUpdate(
                             {
                                 guildID: guild.id,
-                                command:  co.name ? co.name : co.secondName
+                                command: co.name ? co.name : co.secondName
                             }, {
                             $addToSet: {
                                 channels: channel.id
@@ -153,7 +153,7 @@ module.exports = {
 
             }
         } else {
-            return message.reply(await instance.newSyntaxError(guild, "channel", '[enable | disable] [command | all] [tag channel | tag channels]'));
+            return message.reply(await instance.newSyntaxError("channel", guild));
         }
     }
 }
