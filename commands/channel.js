@@ -1,6 +1,5 @@
 const ChannelSchema = require('../models/channel-schema');
 module.exports = {
-    name: 'channel',
     minArgs: 3,
     expectedArgs: '<enable | disable> <command | all> <tag channel | tag channels>',
     guildOnly: true,
@@ -10,7 +9,7 @@ module.exports = {
     cooldown: '3s',
     callback: async ({ client, message, args, prefix, instance }) => {
         let guild = message.guild;
-        if (!instance.isDBConnected()) {
+        if (!instance.isDbConnected()) {
             return message.reply(await instance.getMessage(guild, "NO_DATABASE_FOUND"));
         }
 
@@ -24,7 +23,7 @@ module.exports = {
         }
 
         if (channels.size === 0) {
-            return message.reply(await instance.newSyntaxError("channel", guild));
+            return message.reply(await instance.newSyntaxError(guild, "channel"));
         }
 
 
@@ -153,7 +152,7 @@ module.exports = {
 
             }
         } else {
-            return message.reply(await instance.newSyntaxError("channel", guild));
+            return message.reply(await instance.newSyntaxError(guild, "channel"));
         }
     }
 }

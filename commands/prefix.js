@@ -3,7 +3,6 @@ const prefixSchema = require('../models/prefix-schema');
 const { MessageEmbed } = require('discord.js')
 
 module.exports = {
-    name: 'prefix',
     description: 'Displays or sets the prefix for the current guild',
     category: 'Configuration',
     minArgs: 1,
@@ -16,7 +15,8 @@ module.exports = {
         if (!message.guild) {
             return message.reply(await instance.getMessage(message.guild, "CANNOT_SET_PREFIX_IN_DMS"))
         }
-        if (instance.isDBConnected() === false) {
+
+        if (instance.isDbConnected() === false) {
             message.reply(await instance.getMessage(message.guild, "NO_DATABASE_FOUND"));
             return;
         };
@@ -31,7 +31,7 @@ module.exports = {
 
         return message.channel.send(await instance.getMessage(message.guild, "SET_PREFIX", { PREFIX: pre }));
     },
-    error:  async ({ error, message, instance }) => {
+    error: async ({ error, message, instance }) => {
         if (error === "GUILD_ONLY_COMMAND") {
             return new MessageEmbed().setTitle("Test")
         }

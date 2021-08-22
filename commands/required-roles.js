@@ -1,6 +1,5 @@
 const requiredRolesSchema = require('../models/required-roles-schema');
 module.exports = {
-    name: 'required-roles',
     aliases: ['reqroles', 'requiredroles', 'reqrole', 'required-role'],
     requiredPermissions: ['ADMINISTRATOR'],
     category: 'Configuration',
@@ -11,10 +10,9 @@ module.exports = {
     guildOnly: true,
     cooldown: '3s',
     callback: async ({ client, message, args, instance, prefix }) => {
-        if (!instance.isDBConnected()) {
+        if (!instance.isDbConnected()) {
             return message.reply(await instance.getMessage(message.guild, "NO_DATABASE_FOUND"));
         } else {
-
             const role = message.mentions.roles.first() || message.guild.roles.cache.get(args[2]);
             let command = args[1]
             const isCmdHas = instance.isCommandHas(command);
@@ -22,7 +20,7 @@ module.exports = {
                 return message.reply(await instance.getMessage(message.guild, "UNKOWN_COMMAND", { COMMAND: command.name }));
             }
             command = instance.getCommand(command)
-            if (!role) return message.reply(await instance.newSyntaxError("requiredroles",message.guild));
+            if (!role) return message.reply(await instance.newSyntaxError(message.guild, "requiredroles"));
 
             if (args[0] === "add") {
                 const result = await requiredRolesSchema.findOneAndUpdate({
@@ -90,7 +88,7 @@ module.exports = {
 
                 return message.reply(await instance.getMessage(message.guild, "REMOVED_REQUIRED_ROLE", { ROLE: role.name, COMMAND: command.name }))
             } else {
-                return message.reply(await instance.newSyntaxError("requiredroles",message.guild));
+                return message.reply(await instance.newSyntaxError(message.guild, "requiredroles"));
             }
         }
     }

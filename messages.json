@@ -160,5 +160,37 @@
     "STATS_OFF": {
         "en": "Statistics is off for this server. You can delete the counters.",
         "tr": "İstatistikler bu sunucu için kapatıldı. Sayaçları silebilirsiniz."
+    },
+    "TAG_USER": {
+        "en": "Please tag a user or write user id.",
+        "tr": "Lütfen bir kullanıcı etiketleyin veya kullanıcı id sini yazınızı."
+    },
+    "ALL_BLACKLIST_IS_CLEAN": {
+        "en": "All Users in blacklist are cleaned.",
+        "tr": "Karalistede ki bütün kullanıcılar temizlendi."
+    },
+    "USER_ALREADY_IN_BLACKLIST": {
+        "en": "This user already in blacklist.",
+        "tr": "Bu kullanıcı zaten karalistede."
+    },
+    "USER_SET_TO_BLACKLIST": {
+        "en": "User set to the blacklist.",
+        "tr": "Kullanıcı karalisteye eklendi."
+    },
+    "USER_ALREADY_DELETED_BLACKLIST": {
+        "en": "This user already removed from blacklist.",
+        "tr": "Bu kullanıcı zaten karalisteden kaldırılmış."
+    },
+    "USER_DELETED_FROM_BLACKLIST": {
+        "en": "User removed from blacklist.",
+        "tr": "Kullanıcı karalisteden kaldırıldı."
+    },
+    "USER_IN_BLACKLIST": {
+        "en": "You are in the blacklist so you can use any command!",
+        "tr": "Karalistedesin bu yüzden hiçbir komutu kullanamazsın!"
+    },
+    "YOU_CAN'T_SET_OWNER_TO_BLACKLIST": {
+        "en":"You can't set owner to the blacklist!",
+        "tr": "Karalisteye sahip(ler)i ekleyemezsin!"
     }
 }

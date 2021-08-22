@@ -1,6 +1,6 @@
 {
   "name": "advancedhandler",
-  "version": "1.2.7",
+  "version": "1.2.9",
   "description": "Advanced DiscordJS Handler",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,14 @@
     "url": "git+https://github.com/OzguYalcin/AdvancedHandler.git"
   },
   "keywords": [
-    "handler"
+    "handler",
+    "command",
+    "feature",
+    "event",
+    "discord",
+    "discord.js",
+    "CommandHandler",
+    "FeatureHandler"
   ],
   "bugs": {
     "url": "https://github.com/OzguYalcin/AdvancedHandler/issues"

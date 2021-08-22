@@ -1,12 +1,18 @@
-
+let second = 1000,
+    minute = second * 60,
+    hour = minute * 60,
+    day = hour * 24,
+    week = day * 7,
+    month = week * 4,
+    year = month * 12;
 const permissions = require('./permissions');
 const ms = require('ms')
 const registerCommand = (filePath, fileName, instance, disableCommands) => {
 
     const command = require(filePath);
-    if(!command.name) command.name = fileName
+    if (!command.name) command.name = fileName
     let commandName = command.name;
-    
+
     let callbackCounter = 0;
     if (command.callback) callbackCounter++
     if (command.execute) callbackCounter++
@@ -20,12 +26,20 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
         console.warn("AdvancedHandler > \"" + filePath + "\" Command have no name. Name set to \"" + fileName + "\".")
     };
 
-     let cooldownCounter = 0;
-     if(command.cooldown) cooldownCounter++;
-     if(command.userCooldown) cooldownCounter++;
-     if(command.guildCooldown) cooldownCounter++
+    let cooldownCounter = 0;
+    if (command.cooldown) cooldownCounter++;
+    if (command.userCooldown) cooldownCounter++;
+    if (command.globalCooldown) cooldownCounter++
 
-     if(cooldownCounter > 1) throw new TypeError(`${commandName} command must not have multiple cooldown types.`)
+    if (cooldownCounter > 1) throw new TypeError(`${commandName} command must not have multiple cooldown types.`)
+
+    let cooldown = command.cooldown,
+        userCooldown = command.userCooldown,
+        globalCooldown = command.globalCooldown;
+
+    if ((cooldown || userCooldown || globalCooldown)) {
+        checkCooldown((cooldown || userCooldown || globalCooldown), fileName)
+    }
 
     const requiredPermissions = command.requiredPermissions || command.permissions;
     if (requiredPermissions && typeof requiredPermissions === 'object') {
@@ -44,6 +58,13 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
     }
 
 
+    if (command.maxArgs && !command.expectedArgs) {
+        throw new TypeError("Command located at \"" + filePath + "\" if have maxArgs must have expectedArgs")
+    } else if (command.minArgs && !command.expectedArgs) {
+        throw new TypeError("Command located at \"" + filePath + "\" if have minArgs must have expectedArgs")
+
+    }
+
     let missing = [];
 
     if (!command.category) missing.push("Category");
@@ -53,35 +74,29 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
 
     if (command.testOnly && !instance.testServers) console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"testOnly\" set to true, but no test servers are defined.")
 
-    if (command.ownersOnly && !instance.botOwners) console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"ownersOnly\" set to true, but no bot owners are defined.")
-
-    if (command.maxArgs && !command.expectedArgs) {
-        throw new TypeError("Command located at \"" + filePath + "\" if have maxArgs must have expectedArgs")
-    } else if (command.minArgs && !command.expectedArgs) {
-        throw new TypeError("Command located at \"" + filePath + "\" if have minArgs must have expectedArgs")
-
-    }   
-
-    if(command.cooldown) {
-        if(ms(command.cooldown) >= 0) throw new Error("Command cooldown can not be 0(h, s, d, m)")
+    if (command.ownerOnly && !instance.botOwners) {
+        if (commanName === 'blacklist') {
+            return 
+        }
+        console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"ownerOnly\" set to true, but no bot owners are defined.")
     }
+    return instance.commands.set(commandName, command)
 
-    if(command.userCooldown) {
-        if(ms(command.userCooldown) >= 0) throw new Error("Command user cooldown can not be 0(h, s, d, m)")
+}
+function checkCooldown(cooldown, fileName) {
+    if (cooldown.endsWith("s")) {
+        if (ms(cooldown) > minute) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+        else if (ms(cooldown) < second) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+    } else if (cooldown.endsWith("m")) {
+        if (ms(cooldown) > hour) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+        else if (ms(cooldown) < minute) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+    } else if (cooldown.endsWith("h")) {
+        if (ms(cooldown) > day) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+        else if (ms(cooldown) < hour) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+    } else if (cooldown.endsWith("d")) {
+        if (ms(cooldown) > year) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
+        else if (ms(cooldown) < day) throw new TypeError(`Invalid duration type in "${fileName}" file.`)
     }
-
-    if(command.guildCooldown) {
-        if(ms(command.guildCooldown) >= 1000 * 60) throw new Error("Command guild cooldown  must be bigger then 1 minute!")
-
-    }
-
-    if (commandName && typeof commandName !== 'string') {
-        throw new TypeError('Command name must be string!');
-    } else if (commandName && typeof commandName === 'string') {
-        instance.commands.set(commandName, command)
-    }
-
-
-
+    return false;
 }
 module.exports = registerCommand;

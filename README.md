@@ -15,46 +15,9 @@ npm install advancedhandler
 - [Setup](#setup)
 - [CommandHandler Main File Methods](#commandhandler-main-file-methods)
 - [Commands](#commands)
-  - [Ping pong command example](#ping-pong-command-example)
-  - [Command properties](#command-properties)
-  - [Correct argument usage](#correct-argument-usage)
-  - [Bot owners only command](#bot-owners-only-command)
-  - [Test servers](#test-servers)
-  - [Handling command errors](#handling-command-errors)
-  - [Command cooldowns](#command-cooldowns)
-  - [Required user and bot permissions](#required-user-and-bot-permissions)
-  - [Command categories and help settings](#command-categories-and-help-settings)
-  - [Instance methods](#instance-methods)
-    - [Message methods](#message-methods)
-      - [getMessage](#getmessage)
-      - [newSyntaxError](#newsyntaxerror)
-    - [Language Methods](#language-methods)
-      - [setLanguage](#setlanguage)
-      - [getLanguage](#getlanguage)
-    - [Prefix methods](#prefix-methods)
-      - [setPrefix](#setprefix)
-      - [getPrefix](#getprefix)
-    - [Command methods](#command-methods)
-      - [isCommandHas](#iscommandhas)
-      - [getCommand](#getcommand)
-      - [isCommandDisabled](#iscommanddisabled)
-      - [isChannelDisabled](#ischanneldisabled)
-    - [mongoDB methods](#mongodb-methods)
-      - [isDBConnected](#isdbconnected)
-      - [getDBConnectURI](#getdbconnecturi)
 - [Features](#features)
 - [Default Commands](#default-commands)
-  - [Enabling and disabling commands](#enabling-and-disabling-commands)
-  - [Configurable required roles](#configurable-required-roles)
-  - [Per-guild prefixes](#per-guild-prefixes)
-  - [Customizable messages & per-guild languages](#customizable-messages--per-guild-languages)
-  - [Per-guild language configuration](#per-guild-language-configuration)
-  - [Storing custom messages and translations](#storing-custom-messages-and-translations)
-  - [Global syntax errors](#global-syntax-errors)
-  - [Customizable channel specific commands](#customizable-channel-specific-commands)
-  - [Help](#help)
-  - [Server Stats](#server-stats)
-  
+
 # Setup
 Here is a basic example of how to setup AdvancedHandler. When calling the constructor you can pass in an options object that configures AdvancedHandler to how you want. Here is a full example of all options:
 
@@ -129,6 +92,7 @@ client.on('ready', () => {
         //Specified the which default commands be disable
         //If another command the name as same. Default command will be work
         disabledDefaultCommands: [
+            // 'blacklist',
             // 'channel',
             // 'command',
             // 'help',
@@ -151,7 +115,7 @@ client.login("YOUR TOKEN");
 ```
 
 # CommandHandler Main File Methods
-Here the methods for useing in main file:
+Here the methods for using in main file:
 
 ```js
 new AdvancedHandler.CommandHandler(client)
@@ -214,6 +178,7 @@ new AdvancedHandler.CommandHandler(client)
 
     // It set the "disableDefaultCommands". Must be array
     .setDisableDefaultCommands([
+        // 'blacklist',
         // 'channel',
         // 'command',
         // 'help',
@@ -239,6 +204,18 @@ new AdvancedHandler.CommandHandler(client)
 ```
 
 # Commands
+
+## Shortcuts
+ - [Ping pong command example](#ping-pong-command-example)
+  - [Command properties](#command-properties)
+  - [Correct argument usage](#correct-argument-usage)
+  - [Bot owners only command](#bot-owners-only-command)
+  - [Test servers](#test-servers)
+  - [Handling command errors](#handling-command-errors)
+  - [Command cooldowns](#command-cooldowns)
+  - [Required user and bot permissions](#required-user-and-bot-permissions)
+  - [Command categories and help settings](#command-categories-and-help-settings)
+  - [Instance methods](#instance-methods)
 
 ## Ping pong command example
 AdvancedHandler is easy to get setup and working. On this page you will learn how to create a simple "Ping -> Pong" command example. <br/>
@@ -308,7 +285,6 @@ module.exports = {
 
     //If you want to customize the syntax error message. Its in the "Error Handling" part.
 
-
     // What Discord permissions the user needs to run the command.
     // Note that invalid permissions will throw an error to prevent typos.
     requiredPermissions: ['ADMINISTRATOR'],
@@ -323,7 +299,7 @@ module.exports = {
     // User cooldowns are a per-user system. User wait even if server is different
 
     cooldown: '10s',
-    guildCooldown: '10h',
+    globalCooldown: '10h',
     userCooldown: '10m',
 
     // Forces this command to only be runnable from whitelisted user IDs.
@@ -501,6 +477,7 @@ Here is a list of all command errors you can listen for:
   | Name                   | info                             |
   | ---------------------- | -------------------------------- |
   | GUILD ONLY COMMAND     | null                             |
+  | USER IN BLACKLIST      | message member                   |
   | COMMAND DISABLED       | command object                   |
   | CHANNEL DISABLED       | channel the message was sent     |
   | TEST ONLY              | message guild or "dm"            |
@@ -546,16 +523,16 @@ module.exports = {
   In error function you **mustn't send a message** you must return text or embed.
   
   ## Command cooldowns
-  You can use command wait times to ensure that your commands are only run at frequent intervals. This is very useful for daily or weekly commands. There are three types of cooldowns in CommandHandler: Guild cooldowns are one system per guild. It waits even if the user doesn't use that command. User wait times are per user system. The user waits even if the server is different. But cooldown is for a server and the user on that server. Beklenmesi için kullanıcının ve sunucunun aynı olması gerekir. 
+  You can use command wait times to ensure that your commands are only run at frequent intervals. This is very useful for daily or weekly commands. There are three types of cooldowns in CommandHandler: Guild cooldowns are one system per guild. It waits even if the user doesn't use that command. User wait times are per user system. The user waits even if the server is different. But cooldown is for a server and the user on that server. User and guild must be the same for wait. 
 
 Each cooldown type requires a string for its duration and duration type (seconds, minutes, etc.).
 
-| Character | Duration | Minimum | Example |
-| --------- | -------- | ------- | ------- |
-| s         | Seconds  | 1       | 10s     |
-| m         | Minutes  | 1       | 10m     |
-| h         | Hours    | 1       | 10h     |
-| d         | Days     | 1       | 10d     |
+| Character | Duration | Minimum | Maximum | Example |
+| --------- | -------- | ------- | ------- | ------- |
+| s         | Seconds  | 1       | 60      | 5s      |
+| m         | Minutes  | 1       | 60      | 10m     |
+| h         | Hours    | 1       | 24      | 5h      |
+| d         | Days     | 1       | 365     | 10d     |
 
 Example of per-user-guild cooldowns:
 
@@ -740,13 +717,35 @@ client.on('ready', () => {
 ```
 
 ## Instance methods
+
 AdvancedHandler has many functions that will make your job easier. These methods make it easier to write your code.
 
 Here's All:
 
+### Shortcuts
+- [Message methods](#message-methods)
+  - [getMessage](#getmessage)
+  - [newSyntaxError](#newsyntaxerror)
+- [Language Methods](#language-methods)
+  - [setLanguage](#setlanguage)
+  - [getLanguage](#getlanguage)
+- [Prefix methods](#prefix-methods)
+  - [setPrefix](#setprefix)
+  - [getPrefix](#getprefix)
+- [Command methods](#command-methods)
+  - [isCommandHas](#iscommandhas)
+  - [getCommand](#getcommand)
+  - [isCommandDisabled](#iscommanddisabled)
+  - [isChannelDisabled](#ischanneldisabled)
+- [mongoDB methods](#mongodb-methods)
+  - [isDbConnected](#isdbconnected)
+  - [getDbConnectionURI](#getdbconnectionuri)
+
+
 ### Message methods
 
 #### getMessage
+
 This method is for get message from messages file. This method will translate and replace the text automatically.
 
 messages.json snippet
@@ -856,7 +855,6 @@ This method will set new language to the mongo database.
 #### getLanguage
 This method will get the guilds language. If have no guild return the default language. If have no default language, default language will "en" (english)
 
-show-language.js
 ```js
   await instance.getLanguage(guild);
 ```
@@ -873,7 +871,7 @@ This method will set new prefix to the mongo database.
 
 
 #### getPrefix
-This method will get guild prefix. If have no guild will return default prefix.If have no default prefix, default prefix is "!"
+This method will get guild prefix. If have no guild will return default prefix.If have no default prefix, default prefix is "
 
 ```js
 await instance.getPrefix(guild);
@@ -907,24 +905,23 @@ await instance.isCommandDisabled(guild, "command name");
 This method check the channel is disabled for the command. Aliases will work
 
 ```js
-const { channel } = message;
 await instance.isChannelDisabled(guild, channel, "command name")
 ```
 
 ### mongoDB methods
 
-#### isDBConnected
+#### isDbConnected
 This method will check the mongoDB connected or not.
 
 ```js
-instance.isDBConnected()
+instance.isDbConnected()
 ```
 
-#### getDBConnectURI
+#### getDbConnectionURI
 This method will return the mongoDB connection uri
 
 ```js
-instance.getDBConnectURI()
+instance.getDbConnectionURI()
 ```
 
 # Features
@@ -974,6 +971,27 @@ module.exports = (client) => {
 This feature will be automatically ran and it's exported function will be invoked. This way you can easily register listeners and handle each of your feature's.
 
 # Default Commands
+
+## Shortcuts
+- [Seting removing and cleaning blacklist](#seting-removing-and-cleaning-blacklist)
+- [Enabling and disabling commands](#enabling-and-disabling-commands)
+- [Configurable required roles](#configurable-required-roles)
+- [Per-guild prefixes](#per-guild-prefixes)
+- [Customizable messages & per-guild languages](#customizable-messages--per-guild-languages)
+- [Per-guild language configuration](#per-guild-language-configuration)
+- [Storing custom messages and translations](#storing-custom-messages-and-translations)
+- [Global syntax errors](#global-syntax-errors)
+- [Customizable channel specific commands](#customizable-channel-specific-commands)
+- [Help](#help)
+- [Server Stats](#server-stats)
+  
+
+## Seting removing and cleaning blacklist 
+Advancedhandler comes with the ability for bot owner(s) make some users can or not use the bot's commands. Also this command can clean the the all blacklist. They can do this easily with the following command:
+
+(For use this command you should specified the bot owner(s). If you don't specified the bot owner(s) command can't be used.)
+
+```!blacklist <set | delete | clean> <tag user | userId>```
 
 ## Enabling and disabling commands
 AdvancedHandler comes with the ability for server owners using your bot to enable or disable commands within their server/guild. They can do this easily with the following command:

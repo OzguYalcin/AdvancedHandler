@@ -1,19 +1,18 @@
 const StatsSchema = require('../models/stats-schema');
 
 module.exports = {
-    name: 'stats',
     minArgs: 1,
     maxArgs: 1,
     expectedArgs: "<on | off>",
     category: "Statistics",
     description: "Make stats on or off.",
-    guildCooldown: "10m",
+    globalCooldown: "10m",
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
     requiredBotPermissions: ['MANAGE_GUILD'],
     callback: async ({ client, message, args, instance, prefix }) => {
         let guild = message.guild
-        if (!instance.isDBConnected()) {
+        if (!instance.isDbConnected()) {
             return message.reply(await instance.getMessage(guild, "NO_DATABASE_FOUND"));
         }
 
@@ -22,7 +21,7 @@ module.exports = {
         let result = await StatsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true })
 
         if (!["on", "off"].includes(choose)) {
-            return message.reply(await instance.newSyntaxError("stats", message.guild));
+            return message.reply(await instance.newSyntaxError(message.guild, "stats"));
         }
 
         if (await instance.isStatsOn(guild) && choose === "on") {

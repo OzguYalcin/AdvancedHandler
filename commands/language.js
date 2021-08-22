@@ -1,5 +1,4 @@
 module.exports = {
-    name: 'language',
     aliases: 'lang',
     cooldown: '10s',
     minArgs: 1,
@@ -10,7 +9,7 @@ module.exports = {
     category: "Configuration",
     description: "Displays or sets the language for this Discord server",
     callback: async ({ client, message, args, prefix, instance }) => {
-        if (!instance.isDBConnected()) {
+        if (!instance.isDbConnected()) {
             return message.reply(await instance.getMessage(message.guild, "NO_DATABASE_FOUND"));
         }
         let lang = args[0]

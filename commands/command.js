@@ -1,7 +1,6 @@
 const DiscordJS = require('discord.js');
 const CommandSchema = require('../models/command-schema');
 module.exports = {
-    name: 'command',
     minArgs: 2,
     maxArgs: 2,
     expectedArgs: '<enable | disable> <command>',
@@ -12,7 +11,7 @@ module.exports = {
     guildOnly: true,
     callback: async ({ client, message, args, prefix, instance }) => {
         let guild = message.guild;
-        if (!instance.isDBConnected()) {
+        if (!instance.isDbConnected()) {
             return message.reply(await instance.getMessage(guild, "NO_DATABASE_FOUND"));
         }
 
@@ -47,7 +46,7 @@ module.exports = {
 
             return message.reply(await instance.getMessage(guild, "COMMAND_NOW_DISABLED", { COMMAND: commandName }))
         } else if (!['enable', 'disable'].includes(choice)) {
-            return message.reply(await instance.newSyntaxError("command", guild))
+            return message.reply(await instance.newSyntaxError(guild, "command"))
         } else {
             return message.reply(await instance.getMessage(guild, "SOMETHINK_WENT_WRONG"))
         }

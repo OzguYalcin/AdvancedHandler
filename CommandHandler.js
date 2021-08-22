@@ -15,6 +15,7 @@ const prefixSchema = require('./models/prefix-schema');
 const disableCommandsSchema = require('./models/command-schema');
 const channelSchema = require('./models/channel-schema');
 const statsSchema = require('./models/stats-schema');
+const blacklistSchema = require('./models/blacklist-schema')
 
 /**
 * @constructor
@@ -53,6 +54,7 @@ class CommandHandler {
         this.testServers = options.testServers;
         this.messagesPath = options.messagesPath || path.join(__dirname, 'messages.json');
         this.dbOptions = options.dbOptions;
+        this.sendMessageBlackList = options.sendMessageBlackList || false;
         this.commands = new DiscordJS.Collection();
         this.categories = new DiscordJS.Collection();
         this.hiddenCategories = new DiscordJS.Collection();
@@ -114,7 +116,51 @@ class CommandHandler {
             const command = this.getCommand(firstElement);
 
             let error = command.error;
-
+            if (await this.isUserInBlacklist(message.author.id) && this.isDbConnected()) {
+                if (error) {
+                    if (await error({
+                        command,
+                        error: "USER IN BLACKLIST",
+                        info: message.member,
+                        instance: this,
+                        message,
+                        guild: message.guild
+                    })) {
+                        if (typeof await error({
+                            command,
+                            error: "USER IN BLACKLIST",
+                            info: message.member,
+                            instance: this,
+                            message,
+                            guild: message.guild
+                        }) === 'string') {
+                            return message.reply(await error({
+                                command,
+                                error: "USER IN BLACKLIST",
+                                info: message.member,
+                                instance: this,
+                                message,
+                                guild: message.guild
+                            }))
+                        } else {
+                            return message.reply({
+                                embed: await error({
+                                    command,
+                                    error: "USER IN BLACKLIST",
+                                    info: message.member,
+                                    instance: this,
+                                    message,
+                                    guild: message.guild
+                                })
+                            })
+                        }
+                    } else {
+                        if (this.sendMessageBlackList) return message.reply(await this.getMessage(message.guild, "USER_IN_BLACKLIST"))
+                        else return;
+                    }
+                } else if (this.sendMessageBlackList) return message.reply(await this.getMessage(message.guild, "USER_IN_BLACKLIST"))
+                else return;
+            }
 
             if (command.guildOnly && !message.guild) {
                 if (error) {
@@ -160,7 +206,7 @@ class CommandHandler {
                 } else return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND"))
             }
 
-            if (message.guild && this.isDBConnected()) {
+            if (message.guild && this.isDbConnected()) {
                 if (await this.isCommandDisabled(message.guild, command.name)) {
                     if (error) {
                         if (await error({
@@ -251,10 +297,7 @@ class CommandHandler {
             }
 
             if (message.guild) {
-                if (command.testOnly && !this.testServers) {
-                    if (this.showWarns) console.warn("AdvancedHandler > Command \"" + command.name + "\" has \"testOnly\" set to true, but no test servers are defined.")
-                    return message.reply(await this.getMessage(message.guild, "SOMETHINK_WENT_WRONG"));
-                } else if (command.testOnly && this.testServers) {
+                if (command.testOnly && this.testServers) {
                     let isGuildTest = false;
 
                     if (this.testServers === message.guild.id || this.testServers.includes(message.guild.id)) isGuildTest = true;
@@ -347,10 +390,7 @@ class CommandHandler {
                 } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
             }
 
-            if (command.ownersOnly && !this.botOwners) {
-                if (this.showWarns) console.warn("AdvancedHandler > Command \"" + command.name || command.secondName + "\" has \"ownersOnly\" set to true, but no owners are defined.")
-                return message.reply(await this.getMessage(message.guild, "SOMETHINK_WENT_WRONG"));
-            } else if (command.ownersOnly) {
+            if (command.ownerOnly) {
                 let isOwner = false;
 
                 if (this.botOwners === message.author.id || this.botOwners.includes(message.author.id)) isOwner = true;
@@ -399,7 +439,7 @@ class CommandHandler {
                 }
             }
 
-            if (this.isDBConnected() && message.guild) {
+            if (this.isDbConnected() && message.guild) {
                 const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: command.name }, { guildID: message.guild.id, command: command.name }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 let roleResult = [];
                 if (reqRoles.requiredRoles) {
@@ -576,16 +616,16 @@ class CommandHandler {
             }
 
             let commandCooldown = command.cooldown;
-            let guildCooldown = command.guildCooldown;
+            let globalCooldown = command.globalCooldown;
             let userCooldown = command.userCooldown;
             let now = Date.now();
 
-            if ((commandCooldown || guildCooldown || userCooldown) && this.isDBConnected()) {
+            if ((commandCooldown || globalCooldown || userCooldown) && this.isDbConnected()) {
                 let guildId = message.guild ? message.guild.id : "dm"
                 let cooldownResult;
 
                 if (commandCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${message.author.id}-${command.name}`, name: command.name }, { _id: `${guildId}-${message.author.id}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
-                if (guildCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${command.name}`, name: command.name }, { _id: `${guildId}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                if (globalCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${command.name}`, name: command.name }, { _id: `${guildId}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 if (userCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${message.author.id}-${command.name}`, name: command.name }, { _id: `${message.author.id}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
 
                 if (cooldownResult) {
@@ -642,11 +682,11 @@ class CommandHandler {
                                 name: command.name,
                             }, { cooldown: now + ms(commandCooldown) }, { upsert: true })
                         }
-                        if (guildCooldown) {
+                        if (globalCooldown) {
                             await cooldownSchema.findOneAndUpdate({
                                 _id: `${guildId}-${command.name}`,
                                 name: command.name,
-                            }, { cooldown: now + ms(guildCooldown) }, { upsert: true })
+                            }, { cooldown: now + ms(globalCooldown) }, { upsert: true })
                         }
                         if (userCooldown) {
                             await cooldownSchema.findOneAndUpdate({
@@ -661,16 +701,8 @@ class CommandHandler {
 
             let minArgs = command.minArgs;
             let maxArgs = command.maxArgs || -1;
-            let expectedArgs = command.expectedArgs;
-
-            if (command.maxArgs && !command.expectedArgs) {
-                throw new TypeError("Command \"" + firstElement + "\" if have maxArgs must have expectedArgs")
-            } else if (command.minArgs && !command.expectedArgs) {
-                throw new TypeError("Command  \"" + firstElement + "\" if have minArgs must have expectedArgs")
-
-            }
-
-            if (expectedArgs) {
+            if ((minArgs !== undefined && args.length < minArgs) ||
+                (maxArgs !== undefined && maxArgs !== -1 && args.length > maxArgs)) {
                 if (args.length < minArgs || args.length > maxArgs) {
                     if (error) {
                         if (await error({
@@ -710,9 +742,9 @@ class CommandHandler {
                                 })
                             }
                         } else {
-                            return message.reply(await this.newSyntaxError(command.name, message.guild))
+                            return message.reply(await this.newSyntaxError(message.guild, command.name))
                         }
-                    } else return message.reply(await this.newSyntaxError(command.name, message.guild))
+                    } else return message.reply(await this.newSyntaxError(message.guild, command.name))
                 }
             }
 
@@ -724,6 +756,7 @@ class CommandHandler {
                     {
                         message,
                         channel: message.channel,
+                        guild: message.guild,
                         args,
                         text: args.join(" "),
                         client,
@@ -769,7 +802,7 @@ class CommandHandler {
      * @param {Array<string>} owners 
      * @returns {CommandHandler} 
      */
-    setBotOwners(owners) {
+    setBotOwner(owners) {
         if (typeof owners !== 'object') throw new TypeError('Owners must be array!');
 
         this.botOwners = owners;
@@ -803,7 +836,7 @@ class CommandHandler {
         return this;
     }
     /**
-         * @param {DiscordJS.Guild|any} guild
+         * @param {DiscordJS.Guild} guild
          * @param {string} messageID 
          * @param {object} options
          * @returns {Promise<string>}
@@ -844,11 +877,11 @@ class CommandHandler {
     }
 
     /**
-     * @param {DiscordJS.Guild|any} guild
+     * @param {DiscordJS.Guild} guild
      * @param {string} command 
      * @returns {Promise<string>}
      */
-    async newSyntaxError(command, guild) {
+    async newSyntaxError(guild, command) {
         command = this.getCommand(command)
         if (!command) return console.error("You can't create syntax error with unkown command!")
         let text = await this.getMessage(guild, "SYNTAX_ERROR", {
@@ -898,10 +931,6 @@ class CommandHandler {
         };
 
         if (!settings.authoritativePerms) settings.authoritativePerms = ["ADMINISTRATOR"];
-
-        if (!settings.embed.withPages) settings.embed.withPages = true;
-        if (!settings.embed.destroy) settings.embed.destroy = true;
-        if (!settings.embed.home) settings.embed.home = true;
 
         if (settings.embed.withPages) {
 
@@ -1000,10 +1029,10 @@ class CommandHandler {
     /**
      * 
      * @param {message} message 
-     * @param {object} authoritativePerms 
-     * @returns {any}
+     * @returns {Array<object>}
      */
-    getCategories(message, authoritativePerms) {
+    getCategories(message) {
+        let authoritativePerms = this.helpSettings.authoritativePerms || [];
         let perm = false, categories = this.categories
         for (let i = 0; i < authoritativePerms.length; i++) {
             let _perm = authoritativePerms[i];
@@ -1039,7 +1068,7 @@ class CommandHandler {
     async getLanguage(guild) {
         let lang;
 
-        if (this.isDBConnected()) {
+        if (this.isDbConnected()) {
             let result = await langSchema.findOneAndUpdate({ _id: guild ? guild.id : "dm" }, { _id: guild ? guild.id : "dm" }, { upsert: true, new: true, setDefaultsOnInsert: true })
             if (!result.lang) result.lang = this.defaultLang;
             lang = result.lang
@@ -1078,13 +1107,13 @@ class CommandHandler {
     }
     /**
      * 
-     * @param {any} guild
+     * @param {DiscordJS.Guild} guild
      * @returns {Promise<string>}
      */
     async getPrefix(guild) {
         let prefix;
         if (guild) {
-            if (this.isDBConnected()) {
+            if (this.isDbConnected()) {
                 const result = await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 if (!result.prefix) {
                     result.prefix = this.defaultPrefix; await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id, prefix: this.defaultPrefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
@@ -1102,7 +1131,7 @@ class CommandHandler {
     }
     /**
      * 
-     * @param {DiscordJS.Guild|any} guild 
+     * @param {DiscordJS.Guild} guild 
      * @param {string} prefix 
      * @returns {Promise<any>}
      */
@@ -1148,7 +1177,7 @@ class CommandHandler {
     /**
         * 
         * @param {string} command 
-        * @returns {Object}
+        * @returns {object}
         */
     getCommand(command) {
         let cmd;
@@ -1184,7 +1213,7 @@ class CommandHandler {
     }
     /**
      * 
-     * @param {DiscordJS.Guild|any} guild
+     * @param {DiscordJS.Guild} guild
      * @param {string} command
      * @returns {Promise<boolean>} 
      */
@@ -1197,13 +1226,13 @@ class CommandHandler {
     }
     /**
      * 
-     * @param {DiscordJS.Guild|any} guild 
+     * @param {DiscordJS.Guild} guild 
      * @param {string} command 
-     * @param {any} channel 
+     * @param {DiscordJS.Channel} channel 
      * @returns {Promise<boolean>} 
      */
     async isChannelDisabled(guild, command, channel) {
-        command  = this.getCommand(command)
+        command = this.getCommand(command)
         let output = false
         let result = await channelSchema.findOne({ guildID: guild.id, command: command.name });
         if (result === null) return output;
@@ -1212,7 +1241,6 @@ class CommandHandler {
         return output
     }
     //////////////////////////////////////////////////////////////////////
-
     //mongoDB
     /**
      * 
@@ -1231,7 +1259,7 @@ class CommandHandler {
      * 
      * @returns {boolean}
      */
-    isDBConnected() {
+    isDbConnected() {
         let connect = false
 
         if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) connect = true
@@ -1242,7 +1270,7 @@ class CommandHandler {
      * 
      * @returns {uri}
      */
-    getDBConnectURI() {
+    getDbConnectionURI() {
         return this.mongoURI;
     }
     /**
@@ -1262,7 +1290,7 @@ class CommandHandler {
 
     /**
      * 
-     * @param {any} guild
+     * @param {DiscordJS.Guild} guild
      * @returns {Promise<boolean>} 
      */
 
@@ -1278,7 +1306,7 @@ class CommandHandler {
 
     /**
      * 
-     * @param {any} guild 
+     * @param {DiscordJS.Guild} guild 
      * @param {string} counter
      * @returns {Promise<boolean>} 
      */
@@ -1299,7 +1327,7 @@ class CommandHandler {
 
     /**
      * 
-     * @param {any} guild
+     * @param {DiscordJS.Guild} guild
      * @returns {Promise<boolean>} 
      */
 
@@ -1361,6 +1389,18 @@ class CommandHandler {
         let text = '';
         text = moment.duration(leftCooldown).format("d[d], h[h], m[m], s[s]");
         return text;
+    }
+
+    //blacklist
+    /**
+     * 
+     * @param {string} userId
+     * @returns {Promise<boolean>} 
+     */
+    async isUserInBlacklist(userId) {
+        let result = await blacklistSchema.findOne({ _id: userId });
+        if (result === null) return false
+        else if (result !== null) return true;
     }
 }
 

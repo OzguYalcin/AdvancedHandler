@@ -1,6 +1,5 @@
 const DiscordJS = require('discord.js');
 module.exports = {
-    name: 'help',
     aliases: ['command'],
     category: 'Help',
     description: "Displays this bot's commands",
@@ -11,7 +10,9 @@ module.exports = {
         let helpSettings = instance.helpSettings;
         let allCommands = instance.commands;
         let allCategories = instance.categories;
-        let authoritativePerms = helpSettings.authoritativePerms;
+        let authoritativePerms = helpSettings.authoritativePerms || [];
+        let helpEmbed = helpSettings.embed || {};
+        let color = helpEmbed.color ? helpEmbed.color : null
         if (!args[0]) {
 
             let isHavePerm = false
@@ -29,7 +30,7 @@ module.exports = {
                     .setTitle(title)
                     .setDescription(description)
                     .setFooter(message.member.user.tag)
-                    .setColor(helpSettings.embed.color)
+                    .setColor(color)
                     .setTimestamp();
                 for (let category of categories) {
                     let commands = allCommands.filter(c => c.category === category[1].name);
@@ -53,7 +54,7 @@ module.exports = {
                     .setTitle(title)
                     .setDescription(description)
                     .setFooter(message.member.user.tag)
-                    .setColor(helpSettings.embed.color)
+                    .setColor(color)
                     .setTimestamp();
                 for (let category of categories) {
                     let commands = allCommands.filter(c => c.category === category[1].name);
@@ -83,7 +84,7 @@ module.exports = {
             }
             const embed = new DiscordJS.MessageEmbed()
                 .setTitle('Command Details:')
-                .setColor(helpSettings.embed.color)
+                .setColor(color)
                 .addField("Command:", `\`${command.name}\``)
                 .addField("Aliases:", `${command.aliases ? `${aliasesText}` : `No aliases for this command.`}`)
                 .addField("Usage:", `\`${prefix}${command.name} ${command.expectedArgs ? `${command.expectedArgs}` : ""}\``)
