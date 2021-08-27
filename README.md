@@ -476,17 +476,17 @@ Here is a list of all command errors you can listen for:
 
   | Name                   | info                             |
   | ---------------------- | -------------------------------- |
-  | GUILD ONLY COMMAND     | null                             |
-  | USER IN BLACKLIST      | message member                   |
-  | COMMAND DISABLED       | command object                   |
-  | CHANNEL DISABLED       | channel the message was sent     |
-  | TEST ONLY              | message guild or "dm"            |
-  | BOT OWNERS ONLY        | message author                   |
-  | MISSING ROLES          | commands all required roles list |
-  | MISSING PERMISSION     | permissions the usser needed     |
-  | MISSING BOT PERMISSION | permissions the bot needed       |
+  | GUILD_ONLY_COMMAND     | null                             |
+  | USER_IN_BLACKLIST      | message member                   |
+  | COMMAND_DISABLED       | command object                   |
+  | CHANNEL_DISABLED       | channel the message was sent     |
+  | TEST_ONLY              | message guild or "dm"            |
+  | BOT_OWNERS_ONLY        | message author                   |
+  | MISSING_ROLES          | commands all required roles list |
+  | MISSING_PERMISSION     | permissions the usser needed     |
+  | MISSING_BOT_PERMISSION | permissions the bot needed       |
   | COOLDOWN               | cooldown finish date             |
-  | SYNTAX ERROR           | text                             |
+  | SYNTAX_ERROR           | command text                     |
   
   To listen to command errors you can pass an error function in your command object like so:
   
@@ -505,23 +505,24 @@ module.exports = {
   },
   
   // Invoked when there is an error when running this command
-  error: ({ error, command, message, info, instance, guild }) => {
-    // "error" holds one of the strings mentioned in the above list
-    if (error === 'COMMAND DISABLED') {
-      // For example we can now create and send a custom embed
-      const embed = new MessageEmbed()
-        .setTitle('Command disabled')
-        .setColor(0xff0000)
+  error: {
+  COMMAND_DISABLED: async ({ message, guild, command, instance, info }) => {
+  const embed = new MessageEmbed()
+  .setTitle("COMMAND DISABLED")
+  .setDescription("This command disabled for this guild.")
+  .setColor("RED");
 
-      return embed;
-      // If you want send embed return the embed
-      // and if you want send text return the text
-    }
+  return message.reply("", { embed });
   },
+
+  CHANNEL_DISABLED: async ({ message, guild, command, instance, info }) => {
+   return message.reply("This command is disabled for this channel. Try another :).")
+  }
+
+  }
 }
   ```
-  In error function you **mustn't send a message** you must return text or embed.
-  
+ 
   ## Command cooldowns
   You can use command wait times to ensure that your commands are only run at frequent intervals. This is very useful for daily or weekly commands. There are three types of cooldowns in CommandHandler: Guild cooldowns are one system per guild. It waits even if the user doesn't use that command. User wait times are per user system. The user waits even if the server is different. But cooldown is for a server and the user on that server. User and guild must be the same for wait. 
 

@@ -40,7 +40,7 @@ const blacklistSchema = require('./models/blacklist-schema')
 
 class CommandHandler {
 
-    constructor(client, options = {}) {
+    constructor(client, options = { }) {
         if (!client) throw new TypeError(`AdvancedHandler > No client specified`);
         this.client = client;
         this.commandsDir = options.commandsDir;
@@ -58,21 +58,15 @@ class CommandHandler {
         this.commands = new DiscordJS.Collection();
         this.categories = new DiscordJS.Collection();
         this.hiddenCategories = new DiscordJS.Collection();
-        this.helpSettings = {};
+        this.helpSettings = { };
         this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
         this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
         this.categories.set("Statistics", { name: "Statistics", emoji: "📊", custom: false, hidden: false })
-    }
 
-    ////////////////////
-
-    async run() {
         mongo(this.mongoURI, this.dpOptions);
-        let client = this.client;
         if (this.showWarns === true) {
             if (!this.commandsDir) this.commandsDir = "commands", console.warn("AdvancedHandler > No commands dir specified. Using \"commands\".");
-            if (!this.mongoURI) return console.warn("AdvancedHandler > No mongoDB connection uri. Some features don\'t work!");
-            if (!this.defaultPrefix) this.defaultPrefix = "!", console.warn("AdvancedHandler > No default prefix specified. Using \"!\".");
+            if (!this.mongoURI) console.warn("AdvancedHandler > No mongoDB connection uri. Some features don\'t work!");
         }
         if (fs.existsSync(this.commandsDir)) {
 
@@ -98,6 +92,12 @@ class CommandHandler {
 
 
         } else throw new ('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
+    }
+
+    ////////////////////
+
+    async run() {
+        let client = this.client;
 
         client.on('message', async message => {
             let prefix = await this.getPrefix(message.guild)
@@ -117,181 +117,28 @@ class CommandHandler {
 
             let error = command.error;
             if (await this.isUserInBlacklist(message.author.id) && this.isDbConnected()) {
-                if (error) {
-                    if (await error({
-                        command,
-                        error: "USER IN BLACKLIST",
-                        info: message.member,
-                        instance: this,
-                        message,
-                        guild: message.guild
-                    })) {
-                        if (typeof await error({
-                            command,
-                            error: "USER IN BLACKLIST",
-                            info: message.member,
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        }) === 'string') {
-                            return message.reply(await error({
-                                command,
-                                error: "USER IN BLACKLIST",
-                                info: message.member,
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }))
-                        } else {
-                            return message.reply({
-                                embed: await error({
-                                    command,
-                                    error: "USER IN BLACKLIST",
-                                    info: message.member,
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                })
-                            })
-                        }
-                    } else {
-                        if (this.sendMessageBlackList) return message.reply(await this.getMessage(message.guild, "USER_IN_BLACKLIST"))
-                        else return;
-                    }
+                if (error.USER_IN_BLACKLIST && typeof error.GUILD_ONLY === 'function') {
+                    return await error.USER_IN_BLACKLIST({ message, command, info: message.member, instance: this, guild: message.guild })
                 } else if (this.sendMessageBlackList) return message.reply(await this.getMessage(message.guild, "USER_IN_BLACKLIST"))
                 else return;
             }
 
             if (command.guildOnly && !message.guild) {
-                if (error) {
-                    if (await error({
-                        command,
-                        error: "GUILD ONLY COMMAND",
-                        info: null,
-                        instance: this,
-                        message,
-                        guild: message.guild
-                    })) {
-                        if (typeof await error({
-                            command,
-                            error: "GUILD ONLY COMMAND",
-                            info: null,
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        }) === 'string') {
-                            return message.reply(await error({
-                                command,
-                                error: "GUILD ONLY COMMAND",
-                                info: null,
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }))
-                        } else {
-                            return message.reply({
-                                embed: await error({
-                                    command,
-                                    error: "GUILD ONLY COMMAND",
-                                    info: null,
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                })
-                            })
-                        }
-                    } else {
-                        return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND"))
-                    }
+                if (error.GUILD_ONLY && typeof error.GUILD_ONLY === 'function') {
+                    return await error.GUILD_ONLY({ message, command, info: null, instance: this, guild: message.guild })
                 } else return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND"))
             }
 
             if (message.guild && this.isDbConnected()) {
                 if (await this.isCommandDisabled(message.guild, command.name)) {
-                    if (error) {
-                        if (await error({
-                            command,
-                            error: "COMMAND DISABLED",
-                            info: command,
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        })) {
-                            if (typeof await error({
-                                command,
-                                error: "COMMAND DISABLED",
-                                info: command,
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }) === 'string') {
-                                return message.reply(await error({
-                                    command,
-                                    error: "COMMAND DISABLED",
-                                    info: command,
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }))
-                            } else {
-                                return message.reply({
-                                    embed: await error({
-                                        command,
-                                        error: "COMMAND DISABLED",
-                                        info: command,
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    })
-                                })
-                            }
-                        } else {
-                            return message.reply(await this.getMessage(message.guild, "COMMAND_DISABLED"))
-                        }
+                    if (error.COMMAND_DISABLED && typeof error.COMMAND_DISABLED === 'function') {
+                        return await error.COMMAND_DISABLED({ message, command, info: command, instance: this, guild: message.guild })
                     } else return message.reply(await this.getMessage(message.guild, "COMMAND_DISABLED"))
                 }
 
                 if (await this.isChannelDisabled(message.guild, command.name, message.channel)) {
-                    if (error) {
-                        if (await error({
-                            command,
-                            error: "CHANNEL DISABLED",
-                            info: message.channel,
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        })) {
-                            if (typeof await error({
-                                command,
-                                error: "CHANNEL DISABLED",
-                                info: message.channel,
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }) === 'string') {
-                                return message.reply(await error({
-                                    command,
-                                    error: "CHANNEL DISABLED",
-                                    info: message.channel,
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }))
-                            } else {
-                                return message.reply({
-                                    embed: await error({
-                                        command,
-                                        error: "CHANNEL DISABLED",
-                                        info: message.channel,
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    })
-                                })
-                            }
-                        } else {
-                            return message.reply(await this.getMessage(message.guild, "CHANNEL_DISABLED"))
-                        }
+                    if (error.CHANNEL_DISABLED && typeof error.CHANNEL_DISABLED === 'function') {
+                        return await error.CHANNEL_DISABLED({ message, command, info: message.channel, instance: this, guild: message.guild })
                     } else return message.reply(await this.getMessage(message.guild, "CHANNEL_DISABLED"))
                 }
             }
@@ -303,90 +150,14 @@ class CommandHandler {
                     if (this.testServers === message.guild.id || this.testServers.includes(message.guild.id)) isGuildTest = true;
 
                     if (!isGuildTest) {
-                        if (error) {
-                            if (await error({
-                                command,
-                                error: "TEST ONLY",
-                                info: message.guild ? message.guild : "dm",
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            })) {
-                                if (typeof await error({
-                                    command,
-                                    error: "TEST ONLY",
-                                    info: message.guild ? message.guild : "dm",
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }) === 'string') {
-                                    return message.reply(await error({
-                                        command,
-                                        error: "TEST ONLY",
-                                        info: message.guild ? message.guild : "dm",
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    }))
-                                } else {
-                                    return message.reply({
-                                        embed: await error({
-                                            command,
-                                            error: "TEST ONLY",
-                                            info: message.guild ? message.guild : "dm",
-                                            instance: this,
-                                            message,
-                                            guild: message.guild
-                                        })
-                                    })
-                                }
-                            } else {
-                                return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
-                            }
+                        if (error.TEST_ONLY && typeof error.TEST_ONLY === 'function') {
+                            return await error.TEST_ONLY({ message, command, info: message.guild ? message.guild : "dm", instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
                     }
                 }
             } else if (!message.guild && command.testOnly) {
-                if (error) {
-                    if (await error({
-                        command,
-                        error: "TEST ONLY",
-                        info: message.guild ? message.guild : "dm",
-                        instance: this,
-                        message,
-                        guild: message.guild
-                    })) {
-                        if (typeof await error({
-                            command,
-                            error: "TEST ONLY",
-                            info: message.guild ? message.guild : "dm",
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        }) === 'string') {
-                            return message.reply(await error({
-                                command,
-                                error: "TEST ONLY",
-                                info: message.guild ? message.guild : "dm",
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }))
-                        } else {
-                            return message.reply({
-                                embed: await error({
-                                    command,
-                                    error: "TEST ONLY",
-                                    info: message.guild ? message.guild : "dm",
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                })
-                            })
-                        }
-                    } else {
-                        return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
-                    }
+                if (error.TEST_ONLY && typeof error.TEST_ONLY === 'function') {
+                    return await error.TEST_ONLY({ message, command, info: message.guild ? message.guild : "dm", instance: this, guild: message.guild })
                 } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
             }
 
@@ -395,46 +166,8 @@ class CommandHandler {
 
                 if (this.botOwners === message.author.id || this.botOwners.includes(message.author.id)) isOwner = true;
                 if (!isOwner) {
-                    if (error) {
-                        if (await error({
-                            command,
-                            error: "BOT OWNERS ONLY",
-                            info: message.author,
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        })) {
-                            if (typeof await error({
-                                command,
-                                error: "BOT OWNERS ONLY",
-                                info: message.author,
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }) === 'string') {
-                                return message.reply(await error({
-                                    command,
-                                    error: "BOT OWNERS ONLY",
-                                    info: message.author,
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }))
-                            } else {
-                                return message.reply({
-                                    embed: await error({
-                                        command,
-                                        error: "BOT OWNERS ONLY",
-                                        info: message.author,
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    })
-                                })
-                            }
-                        } else {
-                            return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"))
-                        }
+                    if (error.BOT_OWNERS_ONLY && typeof error.BOT_OWNERS_ONLY === 'function') {
+                        return await error.BOT_OWNERS_ONLY({ message, command, info: message.member, instance: this, guild: message.guild })
                     } else return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"))
                 }
             }
@@ -450,48 +183,8 @@ class CommandHandler {
 
                             if (!message.member.roles.cache.has(role)) {
                                 roleResult = [role, true]
-                                if (error) {
-                                    if (await error({
-                                        command,
-                                        error: "MISSING ROLES",
-                                        info: reqRoles.requiredRoles,
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    })) {
-                                        if (typeof await error({
-                                            command,
-                                            error: "MISSING ROLES",
-                                            info: reqRoles.requiredRoles,
-                                            instance: this,
-                                            message,
-                                            guild: message.guild
-                                        }) === 'string') {
-                                            return message.reply(await error({
-                                                command,
-                                                error: "MISSING ROLES",
-                                                info: reqRoles.requiredRoles,
-                                                instance: this,
-                                                message,
-                                                guild: message.guild
-                                            }))
-                                        } else {
-                                            return message.reply({
-                                                embed: await error({
-                                                    command,
-                                                    error: "MISSING ROLES",
-                                                    info: reqRoles.requiredRoles,
-                                                    instance: this,
-                                                    message,
-                                                    guild: message.guild
-                                                })
-                                            })
-                                        }
-                                    } else {
-                                        return message.reply(await this.getMessage(message.guild, "MISSING_ROLES", {
-                                            ROLE: message.guild.roles.cache.get(roleResult[0]).name
-                                        }))
-                                    }
+                                if (error.MISSING_ROLES && typeof error.MISSING_ROLES === 'function') {
+                                    return await error.MISSING_ROLES({ message, command, info: reqRoles.requiredRoles, instance: this, guild: message.guild })
                                 } else return message.reply(await this.getMessage(message.guild, "MISSING_ROLES", {
                                     ROLE: message.guild.roles.cache.get(roleResult[0]).name
                                 }))
@@ -509,48 +202,8 @@ class CommandHandler {
 
                     if (!message.member.hasPermission(perm)) {
                         permResult = [perm, true]
-                        if (error) {
-                            if (await error({
-                                command,
-                                error: "MISSING PERMISSION",
-                                info: permResult[0],
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            })) {
-                                if (typeof await error({
-                                    command,
-                                    error: "MISSING PERMISSION",
-                                    info: permResult[0],
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }) === 'string') {
-                                    return message.reply(await error({
-                                        command,
-                                        error: "MISSING PERMISSION",
-                                        info: permResult[0],
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    }))
-                                } else {
-                                    return message.reply({
-                                        embed: await error({
-                                            command,
-                                            error: "MISSING PERMISSION",
-                                            info: permResult[0],
-                                            instance: this,
-                                            message,
-                                            guild: message.guild
-                                        })
-                                    })
-                                }
-                            } else {
-                                return message.reply(await this.getMessage(message.guild, "MISSING_PERMISSION", {
-                                    PERM: permResult[0]
-                                }))
-                            }
+                        if (error.MISSING_PERMISSION && typeof error.MISSING_PERMISSION === 'function') {
+                            return await error.MISSING_PERMISSION({ message, command, info: permResult[perm], instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "MISSING_PERMISSION", {
                             PERM: permResult[0]
                         }))
@@ -566,52 +219,23 @@ class CommandHandler {
 
                     if (!message.guild.me.hasPermission(perm)) {
                         permBotResult = [perm, true]
-                        if (error) {
-                            if (await error({
-                                command,
-                                error: "MISSING BOT PERMISSION",
-                                info: perm,
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            })) {
-                                if (typeof await error({
-                                    command,
-                                    error: "MISSING BOT PERMISSION",
-                                    info: perm,
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }) === 'string') {
-                                    return message.reply(await error({
-                                        command,
-                                        error: "MISSING BOT PERMISSION",
-                                        info: perm,
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    }))
-                                } else {
-                                    return message.reply({
-                                        embed: await error({
-                                            command,
-                                            error: "MISSING BOT PERMISSION",
-                                            info: perm,
-                                            instance: this,
-                                            message,
-                                            guild: message.guild
-                                        })
-                                    })
-                                }
-                            } else {
-                                return message.reply(await this.getMessage(message.guild, "MISSING_BOT_PERMISSION", {
-                                    PERM: permBotResult[0]
-                                }))
-                            }
+                        if (error.MISSING_BOT_PERMISSION && typeof error.MISSING_BOT_PERMISSION === 'function') {
+                            return await error.MISSING_BOT_PERMISSION({ message, command, info: perm, instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "MISSING_BOT_PERMISSION", {
                             PERM: permBotResult[0]
                         }))
                     }
+                }
+            }
+
+            let minArgs = command.minArgs;
+            let maxArgs = command.maxArgs || -1;
+            if ((minArgs !== undefined && args.length < minArgs) ||
+                (maxArgs !== undefined && maxArgs !== -1 && args.length > maxArgs)) {
+                if (args.length < minArgs || args.length > maxArgs) {
+                    if (error.SYNTAX_ERROR && typeof error.SYNTAX_ERROR === 'function') {
+                        return await error.SYNTAX_ERROR({ message, command, info: args.join(" "), instance: this, guild: message.guild })
+                    } else return message.reply(await this.newSyntaxError(message.guild, command.name))
                 }
             }
 
@@ -630,48 +254,8 @@ class CommandHandler {
 
                 if (cooldownResult) {
                     if (cooldownResult.cooldown > now) {
-                        if (error) {
-                            if (await error({
-                                command,
-                                error: "COOLDOWN",
-                                info: this.getLeftTime(cooldownResult.cooldown, now),
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            })) {
-                                if (typeof await error({
-                                    command,
-                                    error: "COOLDOWN",
-                                    info: this.getLeftTime(cooldownResult.cooldown, now),
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }) === 'string') {
-                                    return message.reply(await error({
-                                        command,
-                                        error: "COOLDOWN",
-                                        info: this.getLeftTime(cooldownResult.cooldown, now),
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    }))
-                                } else {
-                                    return message.reply({
-                                        embed: await error({
-                                            command,
-                                            error: "COOLDOWN",
-                                            info: this.getLeftTime(cooldownResult.cooldown, now),
-                                            instance: this,
-                                            message,
-                                            guild: message.guild
-                                        })
-                                    })
-                                }
-                            } else {
-                                return message.reply(await this.getMessage(message.guild, "COOLDOWN", {
-                                    COOLDOWN: this.getLeftTime(cooldownResult.cooldown, now)
-                                }))
-                            }
+                        if (error.COOLDOWN && typeof error.COOLDOWN === 'function') {
+                            return await error.COOLDOWN({ message, command, info: cooldownResult.cooldown, instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "COOLDOWN", {
                             COOLDOWN: this.getLeftTime(cooldownResult.cooldown, now)
                         }))
@@ -699,57 +283,6 @@ class CommandHandler {
                 }
             }
 
-            let minArgs = command.minArgs;
-            let maxArgs = command.maxArgs || -1;
-            if ((minArgs !== undefined && args.length < minArgs) ||
-                (maxArgs !== undefined && maxArgs !== -1 && args.length > maxArgs)) {
-                if (args.length < minArgs || args.length > maxArgs) {
-                    if (error) {
-                        if (await error({
-                            command,
-                            error: "SYNTAX ERROR",
-                            info: args.join(" "),
-                            instance: this,
-                            message,
-                            guild: message.guild
-                        })) {
-                            if (typeof await error({
-                                command,
-                                error: "SYNTAX ERROR",
-                                info: args.join(" "),
-                                instance: this,
-                                message,
-                                guild: message.guild
-                            }) === 'string') {
-                                return message.reply(await error({
-                                    command,
-                                    error: "SYNTAX ERROR",
-                                    info: args.join(" "),
-                                    instance: this,
-                                    message,
-                                    guild: message.guild
-                                }))
-                            } else {
-                                return message.reply({
-                                    embed: await error({
-                                        command,
-                                        error: "SYNTAX ERROR",
-                                        info: args.join(" "),
-                                        instance: this,
-                                        message,
-                                        guild: message.guild
-                                    })
-                                })
-                            }
-                        } else {
-                            return message.reply(await this.newSyntaxError(message.guild, command.name))
-                        }
-                    } else return message.reply(await this.newSyntaxError(message.guild, command.name))
-                }
-            }
-
-
-
             const _callback = command.callback || command.run || command.execute
             try {
                 _callback(
@@ -765,8 +298,11 @@ class CommandHandler {
                     }
                 )
             } catch (e) {
-                console.log(e);
-
+                console.error(e);
+                
+                if (error.EXCEPTION && typeof error.EXCEPTION === 'function') {
+                    return await error.EXCEPTION({ message, command, info: e, instance: this, guild: message.guild })
+                }
             }
         })
     }
@@ -845,7 +381,7 @@ class CommandHandler {
          * PREFIX: prefix
          * })
          */
-    async getMessage(guild, messageID, options = {}) {
+    async getMessage(guild, messageID, options = { }) {
         let result;
         let lang = await this.getLanguage(guild);
         if (typeof messageID !== 'string') throw new TypeError('messageID must be a string!');
