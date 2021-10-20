@@ -15,8 +15,52 @@ npm install advancedhandler
 - [Setup](#setup)
 - [CommandHandler Main File Methods](#commandhandler-main-file-methods)
 - [Commands](#commands)
+  - [Shortcuts](#shortcuts)
+  - [Ping pong command example](#ping-pong-command-example)
+  - [Command properties](#command-properties)
+  - [Correct argument usage](#correct-argument-usage)
+  - [Bot owners only command](#bot-owners-only-command)
+  - [Test servers](#test-servers)
+  - [Handling command errors](#handling-command-errors)
+  - [Command cooldowns](#command-cooldowns)
+  - [Required user and bot permissions](#required-user-and-bot-permissions)
+  - [Command categories and help settings](#command-categories-and-help-settings)
+  - [Instance methods](#instance-methods)
+    - [Shortcuts](#shortcuts-1)
+    - [Message methods](#message-methods)
+      - [getMessage](#getmessage)
+      - [newSyntaxError](#newsyntaxerror)
+    - [Language Methods](#language-methods)
+      - [setLanguage](#setlanguage)
+      - [getLanguage](#getlanguage)
+    - [Prefix methods](#prefix-methods)
+      - [setPrefix](#setprefix)
+      - [getPrefix](#getprefix)
+    - [Command methods](#command-methods)
+      - [isCommandHas](#iscommandhas)
+      - [getCommand](#getcommand)
+      - [isCommandDisabled](#iscommanddisabled)
+      - [isChannelDisabled](#ischanneldisabled)
+    - [mongoDB methods](#mongodb-methods)
+      - [isDbConnected](#isdbconnected)
+      - [getDbConnectionURI](#getdbconnectionuri)
 - [Features](#features)
-- [Default Commands](#default-commands)
+- [Built-in Commands And Features](#built-in-commands-and-features)
+  - [Shortcuts](#shortcuts-2)
+  - [Seting removing and cleaning blacklist](#seting-removing-and-cleaning-blacklist)
+  - [Enabling and disabling commands](#enabling-and-disabling-commands)
+  - [Configurable required roles](#configurable-required-roles)
+  - [Per-guild prefixes](#per-guild-prefixes)
+  - [Customizable messages & per-guild languages](#customizable-messages--per-guild-languages)
+  - [Per-guild language configuration](#per-guild-language-configuration)
+  - [Storing custom messages and translations](#storing-custom-messages-and-translations)
+  - [Global syntax errors](#global-syntax-errors)
+  - [Customizable channel specific commands](#customizable-channel-specific-commands)
+  - [Help](#help)
+  - [Server stats](#server-stats)
+  - [Custom events](#custom-events)
+    - [databaseConnected Event](#databaseconnected-event)
+    - [commandException Event](#commandexception-event)
 
 # Setup
 Here is a basic example of how to setup AdvancedHandler. When calling the constructor you can pass in an options object that configures AdvancedHandler to how you want. Here is a full example of all options:
@@ -56,6 +100,9 @@ client.on('ready', () => {
         // Must be supported in your messages.json file
         // en = english, tr = turkish
         defaultLanguage: "en",
+        
+        //Specified the when error messages delete after send. -1 is message not delete.
+        errorMessageDelete: -1
 
         // If your commands should not be ran by a bot, default true
         ignoreBots: true,
@@ -471,7 +518,8 @@ client.login("YOUR TOKEN HERE")
 ```
 
 ## Handling command errors
-CommandHandler sends an error message by default, however you might want to customize this more and perhaps send an embed instead of a normal message. You can listen to command errors to achieve this. <br/><br/>
+CommandHandler sends an error message by default, however you might want to customize this more and perhaps send an embed instead of a normal message. You can listen to command errors to achieve this. <br/> <br/>
+**Note: If you use "error" all default errors will disabled** <br/><br/>
 Here is a list of all command errors you can listen for:
 
   | Name                   | info                             |
@@ -505,21 +553,12 @@ module.exports = {
   },
   
   // Invoked when there is an error when running this command
-  error: {
-  COMMAND_DISABLED: async ({ message, guild, command, instance, info }) => {
-  const embed = new MessageEmbed()
-  .setTitle("COMMAND DISABLED")
-  .setDescription("This command disabled for this guild.")
-  .setColor("RED");
+  error: async ({ error, message, info, command, instance, guild }) => {
+    if(error === "GUILD_ONLY_COMMAND") {
+     return message.reply("This command can just run in a server!");
+    }
+  } 
 
-  return message.reply("", { embed });
-  },
-
-  CHANNEL_DISABLED: async ({ message, guild, command, instance, info }) => {
-   return message.reply("This command is disabled for this channel. Try another :).")
-  }
-
-  }
 }
   ```
  
@@ -971,7 +1010,7 @@ module.exports = (client) => {
 ```
 This feature will be automatically ran and it's exported function will be invoked. This way you can easily register listeners and handle each of your feature's.
 
-# Default Commands
+# Built-in Commands And Features
 
 ## Shortcuts
 - [Seting removing and cleaning blacklist](#seting-removing-and-cleaning-blacklist)
@@ -984,7 +1023,8 @@ This feature will be automatically ran and it's exported function will be invoke
 - [Global syntax errors](#global-syntax-errors)
 - [Customizable channel specific commands](#customizable-channel-specific-commands)
 - [Help](#help)
-- [Server Stats](#server-stats)
+- [Server stats](#server-stats)
+- [Custom events](#custom-events)
   
 
 ## Seting removing and cleaning blacklist 
@@ -1114,7 +1154,56 @@ Allows users to see which commands the bot has and detailed information about th
 
 If ran `!help` it show the categories and the all commands. But if ran `!help [command]` show the commands detail information.
 
-## Server Stats 
+## Server stats 
 It allows users and server/guild owners to see server/guild statistics. There are three types of counters: "all-members", "members" and "bots". This feature can be turned off. They can do this with the following:
 
 `!stats <on | off>`
+
+## Custom events
+AdvancedHandler comes with some custom events that help make our lives as developers easier.
+
+### databaseConnected Event
+This event is fired whenever a database is successfully connected via AdvancedHandler. For more information on how to connect to database please see the "DATABASES" section of this documentation.
+
+index.js
+```js
+const DiscordJS = require('discord.js')
+const { CommandHandler } = require('advancedhandler')
+
+const client = new DiscordJS.Client()
+
+client.on('ready', () => {
+  const handler = new CommandHandler(client, {
+    commandsDir: 'commands'
+  });
+
+  handler.on('databaseConnected', (connection, state) => {
+    console.log('The connection state is "' + state '".');
+  })
+})
+
+client.login("YOUR TOKEN HERE")
+```
+
+### commandException Event
+This event is fired whenever an exception occurs within one of your commands. You can use this information to log error details or provide a meaningful message to the user.
+
+index.js 
+```js
+const DiscordJS = require('discord.js')
+const { CommandHandler } = require('advancedhandler')
+
+const client = new DiscordJS.Client()
+
+client.on('ready', () => {
+  const handler = new CommandHandler(client, {
+    commandsDir: 'commands'
+  });
+
+  handler.on('commandException', (command, message, error) => {
+        console.log(`An exception occured when using command "${command.name}"! The error is:`)
+        console.error(error)  })
+})
+
+client.login("YOUR TOKEN HERE")
+```

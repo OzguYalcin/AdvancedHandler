@@ -192,5 +192,9 @@
     "YOU_CAN'T_SET_OWNER_TO_BLACKLIST": {
         "en":"You can't set owner to the blacklist!",
         "tr": "Karalisteye sahip(ler)i ekleyemezsin!"
+    },
+    "EXCEPTION": {
+        "en": "An error occurred when running this command! This error has been reported to the developers.",
+        "tr": "Komutu çalıştırırken bir hata meydana geldi! Bu hata yetkililere bildirildi."
     }
 }

@@ -75,11 +75,19 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
     if (command.testOnly && !instance.testServers) console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"testOnly\" set to true, but no test servers are defined.")
 
     if (command.ownerOnly && !instance.botOwners) {
-        if (commanName === 'blacklist') {
-            return 
+        if (commandName === 'blacklist') {
+            return
         }
         console.warn("AdvancedHandler > Command \"" + commandName + "\" has \"ownerOnly\" set to true, but no bot owners are defined.")
     }
+
+    if ((command.init && typeof command.init === 'function')) {
+        command.init({
+            client: instance.client,
+            instance
+        })
+    }
+
     return instance.commands.set(commandName, command)
 
 }

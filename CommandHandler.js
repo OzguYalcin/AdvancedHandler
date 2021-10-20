@@ -1,3 +1,4 @@
+const EventEmitter = require('events');
 const getAllFiles = require('./get-all-files');
 const DiscordJS = require('discord.js');
 const path = require('path');
@@ -38,9 +39,10 @@ const blacklistSchema = require('./models/blacklist-schema')
 * @returns
 */
 
-class CommandHandler {
+class CommandHandler extends EventEmitter {
 
-    constructor(client, options = { }) {
+    constructor(client, options = {}) {
+        super()
         if (!client) throw new TypeError(`AdvancedHandler > No client specified`);
         this.client = client;
         this.commandsDir = options.commandsDir;
@@ -58,26 +60,35 @@ class CommandHandler {
         this.commands = new DiscordJS.Collection();
         this.categories = new DiscordJS.Collection();
         this.hiddenCategories = new DiscordJS.Collection();
-        this.helpSettings = { };
+        this.helpSettings = {};
         this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
         this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
         this.categories.set("Statistics", { name: "Statistics", emoji: "📊", custom: false, hidden: false })
+        this.reqRolesSchema = reqRolesSchema
+        this.cooldownSchema = cooldownSchema
+        this.langSchema = langSchema
+        this.prefixSchema = prefixSchema
+        this.disableCommandsSchema = disableCommandsSchema
+        this.channelSchema = channelSchema
+        this.statsSchema = statsSchema
+        this.blacklistSchema = blacklistSchema
+        this.errorMessageDelete = options.errorMessageDelete || -1
+        this.del = this.errorMessageDelete;
 
-        mongo(this.mongoURI, this.dpOptions);
+        mongo(this.mongoURI, this.dpOptions, this)
         if (this.showWarns === true) {
             if (!this.commandsDir) this.commandsDir = "commands", console.warn("AdvancedHandler > No commands dir specified. Using \"commands\".");
             if (!this.mongoURI) console.warn("AdvancedHandler > No mongoDB connection uri. Some features don\'t work!");
         }
         if (fs.existsSync(this.commandsDir)) {
-
-            var files = getAllFiles(path.join(require.main.path, this.commandsDir));
-            var amount = files.length;
+            let files = getAllFiles(path.join(require.main.path, this.commandsDir));
+            let amount = files.length;
             if (amount <= 0) {
                 return;
             }
             console.log("AdvancedHandler > Loaded " + amount + " command" + (amount === 1 ? "" : "s") + ".");
-            for (var _c = 0, files_1 = files; _c < files_1.length; _c++) {
-                var _d = files_1[_c], file = _d[0], fileName = _d[1];
+            for (let _c = 0, files_1 = files; _c < files_1.length; _c++) {
+                let _d = files_1[_c], file = _d[0], fileName = _d[1];
                 registerCommand(`${file}`, fileName, this, this.disableCommands);
             }
 
@@ -116,30 +127,55 @@ class CommandHandler {
             const command = this.getCommand(firstElement);
 
             let error = command.error;
+
             if (await this.isUserInBlacklist(message.author.id) && this.isDbConnected()) {
-                if (error.USER_IN_BLACKLIST && typeof error.GUILD_ONLY === 'function') {
-                    return await error.USER_IN_BLACKLIST({ message, command, info: message.member, instance: this, guild: message.guild })
-                } else if (this.sendMessageBlackList) return message.reply(await this.getMessage(message.guild, "USER_IN_BLACKLIST"))
+                if (error) {
+                    return await error({ error: "USER_IN_BLACKLIST", message, command, info: message.member, instance: this, guild: message.guild })
+                } else if (this.sendMessageBlackList) return message.reply(await this.getMessage(message.guild, "USER_IN_BLACKLIST")).then(msg => {
+                    if (this.del !== -1) {
+                        setTimeout(() => {
+                            msg.delete()
+                        }, this.del)
+                    } else { return }
+                })
                 else return;
             }
 
             if (command.guildOnly && !message.guild) {
-                if (error.GUILD_ONLY && typeof error.GUILD_ONLY === 'function') {
-                    return await error.GUILD_ONLY({ message, command, info: null, instance: this, guild: message.guild })
-                } else return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND"))
+                if (error) {
+                    return await error({ error: "GUILD_ONLY_COMMAND", message, command, info: null, instance: this, guild: message.guild })
+                } else return message.reply(await this.getMessage(message.guild, "GUILD_ONLY_COMMAND")).then(msg => {
+                    if (this.del !== -1) {
+                        setTimeout(() => {
+                            msg.delete()
+                        }, this.del)
+                    } else { return }
+                })
             }
 
             if (message.guild && this.isDbConnected()) {
                 if (await this.isCommandDisabled(message.guild, command.name)) {
-                    if (error.COMMAND_DISABLED && typeof error.COMMAND_DISABLED === 'function') {
-                        return await error.COMMAND_DISABLED({ message, command, info: command, instance: this, guild: message.guild })
-                    } else return message.reply(await this.getMessage(message.guild, "COMMAND_DISABLED"))
+                    if (error) {
+                        return await error({ error: "COMMAND_DISABLED", message, command, info: command, instance: this, guild: message.guild })
+                    } else return message.reply(await this.getMessage(message.guild, "COMMAND_DISABLED")).then(msg => {
+                        if (this.del !== -1) {
+                            setTimeout(() => {
+                                msg.delete()
+                            }, this.del)
+                        } else { return }
+                    })
                 }
 
                 if (await this.isChannelDisabled(message.guild, command.name, message.channel)) {
-                    if (error.CHANNEL_DISABLED && typeof error.CHANNEL_DISABLED === 'function') {
-                        return await error.CHANNEL_DISABLED({ message, command, info: message.channel, instance: this, guild: message.guild })
-                    } else return message.reply(await this.getMessage(message.guild, "CHANNEL_DISABLED"))
+                    if (error) {
+                        return await error({ error: "CHANNEL_DISABLED", message, command, info: message.channel, instance: this, guild: message.guild })
+                    } else return message.reply(await this.getMessage(message.guild, "CHANNEL_DISABLED")).then(msg => {
+                        if (this.del !== -1) {
+                            setTimeout(() => {
+                                msg.delete()
+                            }, this.del)
+                        } else { return }
+                    })
                 }
             }
 
@@ -150,15 +186,27 @@ class CommandHandler {
                     if (this.testServers === message.guild.id || this.testServers.includes(message.guild.id)) isGuildTest = true;
 
                     if (!isGuildTest) {
-                        if (error.TEST_ONLY && typeof error.TEST_ONLY === 'function') {
-                            return await error.TEST_ONLY({ message, command, info: message.guild ? message.guild : "dm", instance: this, guild: message.guild })
-                        } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
+                        if (error) {
+                            return await error({ error: "TEST_ONLY", message, command, info: message.guild ? message.guild : "dm", instance: this, guild: message.guild })
+                        } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY")).then(msg => {
+                            if (this.del !== -1) {
+                                setTimeout(() => {
+                                    msg.delete()
+                                }, this.del)
+                            } else { return }
+                        })
                     }
                 }
             } else if (!message.guild && command.testOnly) {
-                if (error.TEST_ONLY && typeof error.TEST_ONLY === 'function') {
-                    return await error.TEST_ONLY({ message, command, info: message.guild ? message.guild : "dm", instance: this, guild: message.guild })
-                } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY"))
+                if (error) {
+                    return await error({ error: "TEST_ONLY", message, command, info: message.guild ? message.guild : "dm", instance: this, guild: message.guild })
+                } else return message.reply(await this.getMessage(message.guild, "TEST_ONLY")).then(msg => {
+                    if (this.del !== -1) {
+                        setTimeout(() => {
+                            msg.delete()
+                        }, this.del)
+                    } else { return }
+                })
             }
 
             if (command.ownerOnly) {
@@ -166,9 +214,15 @@ class CommandHandler {
 
                 if (this.botOwners === message.author.id || this.botOwners.includes(message.author.id)) isOwner = true;
                 if (!isOwner) {
-                    if (error.BOT_OWNERS_ONLY && typeof error.BOT_OWNERS_ONLY === 'function') {
-                        return await error.BOT_OWNERS_ONLY({ message, command, info: message.member, instance: this, guild: message.guild })
-                    } else return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY"))
+                    if (error) {
+                        return await error({ error: "BOT_OWNERS_ONLY", message, command, info: message.member, instance: this, guild: message.guild })
+                    } else return message.reply(await this.getMessage(message.guild, "BOT_OWNERS_ONLY")).then(msg => {
+                        if (this.del !== -1) {
+                            setTimeout(() => {
+                                msg.delete()
+                            }, this.del)
+                        } else { return }
+                    })
                 }
             }
 
@@ -183,11 +237,17 @@ class CommandHandler {
 
                             if (!message.member.roles.cache.has(role)) {
                                 roleResult = [role, true]
-                                if (error.MISSING_ROLES && typeof error.MISSING_ROLES === 'function') {
-                                    return await error.MISSING_ROLES({ message, command, info: reqRoles.requiredRoles, instance: this, guild: message.guild })
+                                if (error) {
+                                    return await error({ error: "MISSING_ROLES", message, command, info: reqRoles.requiredRoles, instance: this, guild: message.guild })
                                 } else return message.reply(await this.getMessage(message.guild, "MISSING_ROLES", {
                                     ROLE: message.guild.roles.cache.get(roleResult[0]).name
-                                }))
+                                })).then(msg => {
+                                    if (this.del !== -1) {
+                                        setTimeout(() => {
+                                            msg.delete()
+                                        }, this.del)
+                                    } else { return }
+                                })
                             }
                         }
                     }
@@ -202,11 +262,17 @@ class CommandHandler {
 
                     if (!message.member.hasPermission(perm)) {
                         permResult = [perm, true]
-                        if (error.MISSING_PERMISSION && typeof error.MISSING_PERMISSION === 'function') {
-                            return await error.MISSING_PERMISSION({ message, command, info: permResult[perm], instance: this, guild: message.guild })
+                        if (error) {
+                            return await error({ error: "MISSING_PERMISSION", message, command, info: permResult[perm], instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "MISSING_PERMISSION", {
                             PERM: permResult[0]
-                        }))
+                        })).then(msg => {
+                            if (this.del !== -1) {
+                                setTimeout(() => {
+                                    msg.delete()
+                                }, this.del)
+                            } else { return }
+                        })
                     }
                 }
             }
@@ -219,23 +285,34 @@ class CommandHandler {
 
                     if (!message.guild.me.hasPermission(perm)) {
                         permBotResult = [perm, true]
-                        if (error.MISSING_BOT_PERMISSION && typeof error.MISSING_BOT_PERMISSION === 'function') {
-                            return await error.MISSING_BOT_PERMISSION({ message, command, info: perm, instance: this, guild: message.guild })
+                        if (error) {
+                            return await error({ error: "MISSING_BOT_PERMISSION", message, command, info: perm, instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "MISSING_BOT_PERMISSION", {
                             PERM: permBotResult[0]
-                        }))
+                        })).then(msg => {
+                            if (this.del !== -1) {
+                                setTimeout(() => {
+                                    msg.delete()
+                                }, this.del)
+                            } else { return }
+                        })
                     }
                 }
             }
-
             let minArgs = command.minArgs;
             let maxArgs = command.maxArgs || -1;
             if ((minArgs !== undefined && args.length < minArgs) ||
                 (maxArgs !== undefined && maxArgs !== -1 && args.length > maxArgs)) {
                 if (args.length < minArgs || args.length > maxArgs) {
-                    if (error.SYNTAX_ERROR && typeof error.SYNTAX_ERROR === 'function') {
-                        return await error.SYNTAX_ERROR({ message, command, info: args.join(" "), instance: this, guild: message.guild })
-                    } else return message.reply(await this.newSyntaxError(message.guild, command.name))
+                    if (error) {
+                        return await error({ error: "SYNTAX_ERROR", message, command, info: args.join(" "), instance: this, guild: message.guild })
+                    } else return message.reply(await this.newSyntaxError(message.guild, command.name)).then(msg => {
+                        if (this.del !== -1) {
+                            setTimeout(() => {
+                                return msg.delete()
+                            }, this.del)
+                        } else { return }
+                    })
                 }
             }
 
@@ -254,34 +331,28 @@ class CommandHandler {
 
                 if (cooldownResult) {
                     if (cooldownResult.cooldown > now) {
-                        if (error.COOLDOWN && typeof error.COOLDOWN === 'function') {
-                            return await error.COOLDOWN({ message, command, info: cooldownResult.cooldown, instance: this, guild: message.guild })
+                        if (error) {
+                            return await error({ error: "COOLDOWN", message, command, info: cooldownResult.cooldown, instance: this, guild: message.guild })
                         } else return message.reply(await this.getMessage(message.guild, "COOLDOWN", {
                             COOLDOWN: this.getLeftTime(cooldownResult.cooldown, now)
-                        }))
+                        })).then(msg => {
+                            if (this.del !== -1) {
+                                setTimeout(() => {
+                                    msg.delete()
+                                }, this.del)
+                            } else { return }
+                        })
                     } else {
-                        if (commandCooldown) {
-                            await cooldownSchema.findOneAndUpdate({
-                                _id: `${guildId}-${message.author.id}-${command.name}`,
-                                name: command.name,
-                            }, { cooldown: now + ms(commandCooldown) }, { upsert: true })
-                        }
-                        if (globalCooldown) {
-                            await cooldownSchema.findOneAndUpdate({
-                                _id: `${guildId}-${command.name}`,
-                                name: command.name,
-                            }, { cooldown: now + ms(globalCooldown) }, { upsert: true })
-                        }
-                        if (userCooldown) {
-                            await cooldownSchema.findOneAndUpdate({
-                                _id: `${message.author.id}-${command.name}`,
-                                name: command.name,
-                            }, { cooldown: now + ms(userCooldown) }, { upsert: true })
-                        }
+                        this.setCooldown(message, command, now, {
+                            type: commandCooldown ? "commandCooldown" :
+                                globalCooldown ? "globalCooldown" : "userCooldown"
+                        })
                     }
 
                 }
             }
+
+
 
             const _callback = command.callback || command.run || command.execute
             try {
@@ -298,11 +369,21 @@ class CommandHandler {
                     }
                 )
             } catch (e) {
-                console.error(e);
-                
-                if (error.EXCEPTION && typeof error.EXCEPTION === 'function') {
-                    return await error.EXCEPTION({ message, command, info: e, instance: this, guild: message.guild })
+
+                if (error) {
+                    return await error({ error: "EXCEPTION", message, command, info: e, instance: this, guild: message.guild })
+                } else {
+                    console.error(e);
+                    message.reply(await this.getMessage(message.guild, "EXCEPTION")).then(msg => {
+                        if (this.del !== -1) {
+                            setTimeout(() => {
+                                msg.delete()
+                            }, this.del)
+                        } else { return }
+                    })
                 }
+                this.emit('commandException', command, message, e)
+
             }
         })
     }
@@ -381,7 +462,7 @@ class CommandHandler {
          * PREFIX: prefix
          * })
          */
-    async getMessage(guild, messageID, options = { }) {
+    async getMessage(guild, messageID, options = {}) {
         let result;
         let lang = await this.getLanguage(guild);
         if (typeof messageID !== 'string') throw new TypeError('messageID must be a string!');
@@ -400,9 +481,9 @@ class CommandHandler {
             result = messagesPath[messageID];
         }
         result = result[lang];
-        for (var i = 0, a = Object.keys(options); i < a.length; i++) {
-            var key = a[i];
-            var expression = new RegExp("{" + key + "}", 'g');
+        for (let i = 0, a = Object.keys(options); i < a.length; i++) {
+            let key = a[i];
+            let expression = new RegExp("{" + key + "}", 'g');
             result = result.replace(expression, options[key]);
         }
         if (!result) {
@@ -493,9 +574,9 @@ class CommandHandler {
                 if (this.isNameUsed(category.name)) throw new Error("Names must be used once!");
 
                 if (typeof category.name !== 'string') throw new TypeError("Category name must be string!");
-                if (typeof category.emoji !== 'string') throw new TypeError("Category emoji must be string!");
-                if (typeof category.custom !== 'boolean') throw new TypeError("Category emoji custom must be boolean!");
-                if (typeof category.hidden !== 'boolean') throw new TypeError("Category hidden must be boolean!");
+                if ((typeof category.emoji !== 'string' && category.emoji)) throw new TypeError("Category emoji must be string!");
+                if ((typeof category.custom !== 'boolean' && category.custom)) throw new TypeError("Category emoji custom must be boolean!");
+                if ((typeof category.hidden !== 'boolean' && category.hidde)) throw new TypeError("Category hidden must be boolean!");
 
                 this.categories.set(category.name, category);
             }
@@ -925,6 +1006,77 @@ class CommandHandler {
         let text = '';
         text = moment.duration(leftCooldown).format("d[d], h[h], m[m], s[s]");
         return text;
+    }
+
+    /**
+     * 
+     * @param {DiscordJS.Message} message 
+     * @param {object} command 
+     * @param {Date} now 
+     * @param {object} options 
+     */
+    async setCooldown(message, command, now, options = { type: "commandCooldown" }) {
+        if (!options.type) options.type = "commandCooldown";
+        let { type } = options
+
+        if (!["commandCooldown", "globalCooldown", "userCooldown"].includes(type)) throw new TypeError("Unkown cooldown type!")
+
+        let { guild } = message
+        let guildId = guild.id
+        if (type === "commandCooldown") {
+            await cooldownSchema.findOneAndUpdate({
+                _id: `${guildId}-${message.author.id}-${command.name}`,
+                name: command.name,
+            }, { cooldown: now + ms(command.cooldown) }, { upsert: true })
+        }
+        if (type === "globalCooldown") {
+            await cooldownSchema.findOneAndUpdate({
+                _id: `${guildId}-${command.name}`,
+                name: command.name,
+            }, { cooldown: now + ms(command.globalCooldown) }, { upsert: true })
+        }
+        if (type === "userCooldown") {
+            await cooldownSchema.findOneAndUpdate({
+                _id: `${message.author.id}-${command.name}`,
+                name: command.name,
+            }, { cooldown: now + ms(command.userCooldown) }, { upsert: true })
+        }
+
+    }
+
+    /**
+     * 
+     * @param {DiscordJS.Message} message 
+     * @param {object} command 
+     * @param {object} options 
+     */
+    async deleteCooldown(message, command, options = { type: "commandCooldown" }) {
+        if (!options.type) options.type = "commandCooldown";
+        let { type } = options
+
+        if (!["commandCooldown", "globalCooldown", "userCooldown"].includes(type)) throw new TypeError("Unkown cooldown type!")
+
+        let { guild } = message
+        let guildId = guild.id
+
+        if (type === "commandCooldown") {
+            await cooldownSchema.findOneAndDelete({
+                _id: `${guildId}-${message.author.id}-${command.name}`,
+                name: command.name,
+            })
+        }
+        if (type === "globalCooldown") {
+            await cooldownSchema.findOneAndDelete({
+                _id: `${guildId}-${command.name}`,
+                name: command.name,
+            })
+        }
+        if (type === "userCooldown") {
+            await cooldownSchema.findOneAndDelete({
+                _id: `${message.author.id}-${command.name}`,
+                name: command.name,
+            })
+        }
     }
 
     //blacklist

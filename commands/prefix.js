@@ -31,9 +31,4 @@ module.exports = {
 
         return message.channel.send(await instance.getMessage(message.guild, "SET_PREFIX", { PREFIX: pre }));
     },
-    error: async ({ error, message, instance }) => {
-        if (error === "GUILD_ONLY_COMMAND") {
-            return new MessageEmbed().setTitle("Test")
-        }
-    }
 }
