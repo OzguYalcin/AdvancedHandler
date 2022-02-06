@@ -1,13 +1,14 @@
-const prefixSchema = require('../models/prefix-schema');
-
-const { MessageEmbed } = require('discord.js')
 
 module.exports = {
     description: 'Displays or sets the prefix for the current guild',
     category: 'Configuration',
-    minArgs: 1,
-    maxArgs: 1,
-    expectedArgs: '<prefix>',
+    usage: {
+        minArgs: 1,
+        maxArgs: 1,
+        params: [
+            "[prefix]"
+        ]
+    },
     cooldown: '3s',
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],

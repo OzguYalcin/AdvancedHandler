@@ -319,16 +319,18 @@ module.exports = {
     category: 'Fun',
     description: 'A simple ping pong command.',
 
-    // The correct arguments to use for this command.
-    // Displayed when the number of arguments is incorrect
-    // from "minArgs" and "maxArgs".
-    expectedArgs: '',
-
-    // The minimum and maximum amount of arguments.
-    // Tells CommandHandler when to send the correct usage of this command.
-    // Setting maxArgs to -1 (the default) will allow any number of arguments.
-    minArgs: 0,
-    maxArgs: 0,
+   usage: {
+   minArgs: 0,
+   maxArgs: 2,
+   params: [
+   // [] = unrequired
+   // <> = required
+   "<test>",
+   "[test_2]"
+    ]
+   }
+   
+   
 
     //If you want to customize the syntax error message. Its in the "Error Handling" part.
 
@@ -386,9 +388,11 @@ module.exports = {
     description: 'Adds two numbers together',
     
     // For the correct usage of the command
-    expectedArgs: '<Number 1> <Number 2>',
+    usage: {
+    params: ['<Number 1>', '<Number 2>']
     minArgs: 2,
     maxArgs: 2,
+    }
     
     // Invoked when the command is actually ran
     callback: ({ channel, args }) => {

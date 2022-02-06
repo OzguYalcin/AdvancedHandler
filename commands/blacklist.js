@@ -6,9 +6,14 @@ module.exports = {
     cooldown: '5s',
     category: 'Configuration',
     description: 'Make user can\'t use commands in every guild.',
-    maxArgs: 2,
-    minArgs: 1,
-    expectedArgs: '[set | delete | clean] <@user | userId>',
+    usage: {
+        maxArgs: 2,
+        minArgs: 1,
+        params: [
+            "[set | delete | clean]",
+            "<user@ | userId>"
+        ]
+    },
     callback: async ({ client, message, args, instance, prefix, text, guild }) => {
         if (!instance.isDbConnected()) {
             return message.reply(await instance.getMessage(guild, "NO_DATABASE_FOUND"));
@@ -16,7 +21,7 @@ module.exports = {
         let choice = args[0].toLocaleLowerCase();
 
         if (!["set", "delete", "clean"].includes(choice)) {
-            return message.reply(await instance.newSyntaxError(guild, "blacklist"));
+            return message.reply(await instance.createSyntaxError(message, "blacklist", 0, "REQUIRED_PARAM"));
         }
 
         if ((choice === 'set' || choice === 'delete') && (!args[1] || !message.mentions.users.first())) {

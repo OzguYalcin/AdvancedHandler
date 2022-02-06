@@ -1,9 +1,14 @@
 const DiscordJS = require('discord.js');
 const CommandSchema = require('../models/command-schema');
 module.exports = {
-    minArgs: 2,
-    maxArgs: 2,
-    expectedArgs: '<enable | disable> <command>',
+    usage: {
+        minArgs: 2,
+        maxArgs: 2,
+        params: [
+            "[enable |disable]",
+            "[command]"
+        ]
+    },
     cooldown: '3s',
     category: 'Configuration',
     description: 'Makes a command enable or disable for this guild',
@@ -46,7 +51,7 @@ module.exports = {
 
             return message.reply(await instance.getMessage(guild, "COMMAND_NOW_DISABLED", { COMMAND: commandName }))
         } else if (!['enable', 'disable'].includes(choice)) {
-            return message.reply(await instance.newSyntaxError(guild, "command"))
+            return message.reply(await instance.newSyntaxError(message, "command", 0))
         } else {
             return message.reply(await instance.getMessage(guild, "SOMETHINK_WENT_WRONG"))
         }

@@ -16,34 +16,24 @@ const prefixSchema = require('./models/prefix-schema');
 const disableCommandsSchema = require('./models/command-schema');
 const channelSchema = require('./models/channel-schema');
 const statsSchema = require('./models/stats-schema');
-const blacklistSchema = require('./models/blacklist-schema')
+const blacklistSchema = require('./models/blacklist-schema');
+const { Dashboard } = require('./Dashboard/app.js');
+const express = require('express');
+const dashboardSchema = require('./models/dashboard-statu-schema');
 
 /**
-* @constructor
-* @param {DiscordJS.Client} client - DiscordJS Client
-* @param {object} options - CommandHandler options
-* @example
-* new AdvancedHandler.CommandHandler(client, {
-* commandsDir: "commands",
-* defaultPrefix: "!",
-* ignoreBots: true,
-* showWarns: true,
-* botOwners: ["ID 1", "ID2"],
-* testServers: ["ID 1", "ID 2"],
-* messagesPath: "your messages path",
-* mongoURI: "your mongoDB connection uri",
-* dbOptions: {
-        keepAlive: true, useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false
-    }
-* });
-* @returns
-*/
+ * @constructor
+ * @param {DiscordJS.Client} client - DiscordJS Client
+ * @param {object} options - CommandHandler options
+ * @returns
+ */
 
 class CommandHandler extends EventEmitter {
 
     constructor(client, options = {}) {
         super()
         if (!client) throw new TypeError(`AdvancedHandler > No client specified`);
+        this.path = path;
         this.client = client;
         this.commandsDir = options.commandsDir;
         this.defaultPrefix = options.defaultPrefix;
@@ -58,23 +48,28 @@ class CommandHandler extends EventEmitter {
         this.dbOptions = options.dbOptions;
         this.sendMessageBlackList = options.sendMessageBlackList || false;
         this.commands = new DiscordJS.Collection();
+        this.aliases = new DiscordJS.Collection();
         this.categories = new DiscordJS.Collection();
+        this.categories.set('Uncategorized Commands', { name: "Uncategorized Commands", emoji: "❔", custom: false, hidden: false })
         this.hiddenCategories = new DiscordJS.Collection();
         this.helpSettings = {};
-        this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false })
-        this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false })
-        this.categories.set("Statistics", { name: "Statistics", emoji: "📊", custom: false, hidden: false })
-        this.reqRolesSchema = reqRolesSchema
-        this.cooldownSchema = cooldownSchema
-        this.langSchema = langSchema
-        this.prefixSchema = prefixSchema
-        this.disableCommandsSchema = disableCommandsSchema
-        this.channelSchema = channelSchema
-        this.statsSchema = statsSchema
-        this.blacklistSchema = blacklistSchema
-        this.errorMessageDelete = options.errorMessageDelete || -1
+        this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false });
+        this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false });
+        this.categories.set("Statistics", { name: "Statistics", emoji: "📊", custom: false, hidden: false });
+        this.reqRolesSchema = reqRolesSchema;
+        this.cooldownSchema = cooldownSchema;
+        this.langSchema = langSchema;
+        this.prefixSchema = prefixSchema;
+        this.disableCommandsSchema = disableCommandsSchema;
+        this.channelSchema = channelSchema;
+        this.statsSchema = statsSchema;
+        this.blacklistSchema = blacklistSchema;
+        this.errorMessageDelete = options.errorMessageDelete || -1;
         this.del = this.errorMessageDelete;
+        this.disableCommandWhenException = options.disableCommandWhenException || false;
 
+        this.syntaxErrorTypes = ["MIN_ARGS", "MAX_ARGS", "REQUIRED_PARAM"];
+        if (typeof this.port !== 'number') throw new TypeError("Port value must be a number!");
         mongo(this.mongoURI, this.dpOptions, this)
         if (this.showWarns === true) {
             if (!this.commandsDir) this.commandsDir = "commands", console.warn("AdvancedHandler > No commands dir specified. Using \"commands\".");
@@ -91,23 +86,24 @@ class CommandHandler extends EventEmitter {
                 let _d = files_1[_c], file = _d[0], fileName = _d[1];
                 registerCommand(`${file}`, fileName, this, this.disableCommands);
             }
-
             const defaultFiles = getAllFiles(path.join(__dirname, 'commands'));
-
             for (let i = 0; i < defaultFiles.length; i++) {
-
                 if (this.disableCommands && this.disableCommands.includes(defaultFiles[i][1])) continue;
-
                 registerCommand(defaultFiles[i][0], defaultFiles[i][1], this, this.disableCommands);
             }
 
 
-        } else throw new ('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
+        } else throw new Error('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
     }
-
     ////////////////////
 
     async run() {
+
+        this.categories.forEach((category) => {
+            this.categories.commands = this.commands.filter((c) => c.category == category.name);
+            return;
+        })
+
         let client = this.client;
 
         client.on('message', async message => {
@@ -299,65 +295,112 @@ class CommandHandler extends EventEmitter {
                     }
                 }
             }
-            let minArgs = command.minArgs;
-            let maxArgs = command.maxArgs || -1;
-            if ((minArgs !== undefined && args.length < minArgs) ||
-                (maxArgs !== undefined && maxArgs !== -1 && args.length > maxArgs)) {
-                if (args.length < minArgs || args.length > maxArgs) {
-                    if (error) {
-                        return await error({ error: "SYNTAX_ERROR", message, command, info: args.join(" "), instance: this, guild: message.guild })
-                    } else return message.reply(await this.newSyntaxError(message.guild, command.name)).then(msg => {
-                        if (this.del !== -1) {
-                            setTimeout(() => {
-                                return msg.delete()
-                            }, this.del)
-                        } else { return }
-                    })
-                }
-            }
 
-            let commandCooldown = command.cooldown;
-            let globalCooldown = command.globalCooldown;
-            let userCooldown = command.userCooldown;
-            let now = Date.now();
+            let usage = command.usage;
+            let { params, minArgs, maxArgs } = usage
 
-            if ((commandCooldown || globalCooldown || userCooldown) && this.isDbConnected()) {
-                let guildId = message.guild ? message.guild.id : "dm"
-                let cooldownResult;
-
-                if (commandCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${message.author.id}-${command.name}`, name: command.name }, { _id: `${guildId}-${message.author.id}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
-                if (globalCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${command.name}`, name: command.name }, { _id: `${guildId}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
-                if (userCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${message.author.id}-${command.name}`, name: command.name }, { _id: `${message.author.id}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
-
-                if (cooldownResult) {
-                    if (cooldownResult.cooldown > now) {
-                        if (error) {
-                            return await error({ error: "COOLDOWN", message, command, info: cooldownResult.cooldown, instance: this, guild: message.guild })
-                        } else return message.reply(await this.getMessage(message.guild, "COOLDOWN", {
-                            COOLDOWN: this.getLeftTime(cooldownResult.cooldown, now)
-                        })).then(msg => {
-                            if (this.del !== -1) {
-                                setTimeout(() => {
-                                    msg.delete()
-                                }, this.del)
-                            } else { return }
-                        })
-                    } else {
-                        this.setCooldown(message, command, now, {
-                            type: commandCooldown ? "commandCooldown" :
-                                globalCooldown ? "globalCooldown" : "userCooldown"
-                        })
+            if (minArgs !== undefined && args.length < minArgs) {
+                if (error) {
+                    return await error({ error: "SYNTAX_ERROR", message, command, info: args.join(" "), instance: this, guild: message.guild })
+                } else return message.reply(await this.createSyntaxError(message, command.name, minArgs - 1, "MIN_ARGS")).then(msg => {
+                    if (this.del !== -1) {
+                        setTimeout(() => {
+                            msg.delete();
+                        }, this.del)
+                    } else return
+                })
+            } else if (maxArgs !== undefined && args.length > maxArgs) {
+                if (error) {
+                    return await error({ error: "SYNTAX_ERROR", message, command, info: args.join(" "), instance: this, guild: message.guild })
+                } else return message.reply(await this.createSyntaxError(message, command.name, args.length, "MAX_ARGS")).then(msg => {
+                    if (this.del !== -1) {
+                        setTimeout(() => {
+                            msg.delete();
+                        }, this.del)
+                    } else return
+                })
+            } else {
+                //
+                for (let i = 0; i < params.length; i++) {
+                    const text = args[i];
+                    const param = params[i]
+                    if (!text) {
+                        if (param.required == true) {
+                            if (error) {
+                                return await error({ error: "SYNTAX_ERROR", message, command, info: args.join(" "), instance: this, guild: message.guild })
+                            } else return message.reply(await this.createSyntaxError(message, command.name, args.length, "REQUIRED_PARAM")).then(msg => {
+                                if (this.del !== -1) {
+                                    setTimeout(() => {
+                                        msg.delete();
+                                    }, this.del)
+                                } else return
+                            })
+                        } else {
+                            break
+                        }
                     }
-
                 }
-            }
+
+
+                // let minArgs = command.minArgs;
+                // let maxArgs = command.maxArgs || -1;
+                // if ((minArgs !== undefined && args.length < minArgs) ||
+                //     (maxArgs !== undefined && maxArgs !== -1 && args.length > maxArgs)) {
+                //     if (args.length < minArgs || args.length > maxArgs) {
+                //         if (error) {
+                //             return await error({ error: "SYNTAX_ERROR", message, command, info: args.join(" "), instance: this, guild: message.guild })
+                //         } else return message.reply(await this.newSyntaxError(message.guild, command.name)).then(msg => {
+                //             if (this.del !== -1) {
+                //                 setTimeout(() => {
+                //                     return msg.delete()
+                //                 }, this.del)
+                //             } else { return }
+                //         })
+                //     }
+                // }
 
 
 
-            const _callback = command.callback || command.run || command.execute
-            try {
-                _callback(
-                    {
+                let commandCooldown = command.cooldown;
+                let globalCooldown = command.globalCooldown;
+                let userCooldown = command.userCooldown;
+                let now = Date.now();
+
+                if ((commandCooldown || globalCooldown || userCooldown) && this.isDbConnected()) {
+                    let guildId = message.guild ? message.guild.id : "dm"
+                    let cooldownResult;
+
+                    if (commandCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${message.author.id}-${command.name}`, name: command.name }, { _id: `${guildId}-${message.author.id}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                    if (globalCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${guildId}-${command.name}`, name: command.name }, { _id: `${guildId}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                    if (userCooldown) cooldownResult = await cooldownSchema.findOneAndUpdate({ _id: `${message.author.id}-${command.name}`, name: command.name }, { _id: `${message.author.id}-${command.name}` }, { upsert: true, new: true, setDefaultsOnInsert: true });
+
+                    if (cooldownResult) {
+                        if (cooldownResult.cooldown > now) {
+                            if (error) {
+                                return await error({ error: "COOLDOWN", message, command, info: cooldownResult.cooldown, instance: this, guild: message.guild })
+                            } else return message.reply(await this.getMessage(message.guild, "COOLDOWN", {
+                                COOLDOWN: this.getLeftTime(cooldownResult.cooldown, now)
+                            })).then(msg => {
+                                if (this.del !== -1) {
+                                    setTimeout(() => {
+                                        msg.delete()
+                                    }, this.del)
+                                } else { return }
+                            })
+                        } else {
+                            this.setCooldown(message, command, now, {
+                                type: commandCooldown ? "commandCooldown" : globalCooldown ? "globalCooldown" : "userCooldown"
+                            })
+                        }
+
+                    }
+                }
+
+
+
+                const _callback = command.callback || command.run || command.execute
+                try {
+                    _callback({
                         message,
                         channel: message.channel,
                         guild: message.guild,
@@ -366,24 +409,37 @@ class CommandHandler extends EventEmitter {
                         client,
                         prefix,
                         instance: this
-                    }
-                )
-            } catch (e) {
-
-                if (error) {
-                    return await error({ error: "EXCEPTION", message, command, info: e, instance: this, guild: message.guild })
-                } else {
-                    console.error(e);
-                    message.reply(await this.getMessage(message.guild, "EXCEPTION")).then(msg => {
-                        if (this.del !== -1) {
-                            setTimeout(() => {
-                                msg.delete()
-                            }, this.del)
-                        } else { return }
                     })
-                }
-                this.emit('commandException', command, message, e)
+                } catch (e) {
 
+                    if (error) {
+                        return await error({ error: "EXCEPTION", message, command, info: e, instance: this, guild: message.guild })
+                    } else {
+                        console.error(e);
+                        message.reply(await this.getMessage(message.guild, "EXCEPTION")).then(msg => {
+                            if (this.disableCommandWhenException === true) {
+                                this.commands.delete(command.name);
+                                if (command.aliases) {
+                                    if (typeof command.aliases === 'object') {
+                                        command.aliases.forEach(item => {
+                                            this.aliases.delete(item)
+                                        })
+                                    } else if (typeof command.aliases === 'string') {
+                                        this.aliases.delete(command.aliases)
+                                    } else { return }
+                                } else { return };
+                                console.warn("An exception occured when using command \"" + command.name + "\"! Command was disabled.")
+                            }
+                            if (this.del !== -1) {
+                                setTimeout(() => {
+                                    msg.delete()
+                                }, this.del)
+                            } else { return }
+                        })
+                    }
+                    this.emit('commandException', command, message, e)
+
+                }
             }
         })
     }
@@ -453,15 +509,15 @@ class CommandHandler extends EventEmitter {
         return this;
     }
     /**
-         * @param {DiscordJS.Guild} guild
-         * @param {string} messageID 
-         * @param {object} options
-         * @returns {Promise<string>}
-         * @expamle 
-         * await instance.getMessage(message.guild, "MESSAGE ID", {
-         * PREFIX: prefix
-         * })
-         */
+     * @param {DiscordJS.Guild} guild
+     * @param {string} messageID 
+     * @param {object} options
+     * @returns {Promise<string>}
+     * @expamle 
+     * await instance.getMessage(message.guild, "MESSAGE ID", {
+     * PREFIX: prefix
+     * })
+     */
     async getMessage(guild, messageID, options = {}) {
         let result;
         let lang = await this.getLanguage(guild);
@@ -494,20 +550,62 @@ class CommandHandler extends EventEmitter {
     }
 
     /**
-     * @param {DiscordJS.Guild} guild
-     * @param {string} command 
-     * @returns {Promise<string>}
+     * @param {DiscordJS.Message} message
+     * @param {string} command Command name
+     * @param {number} paramIndex
+     * @param {string} type
+     * @returns {string}
+     * 
      */
-    async newSyntaxError(guild, command) {
-        command = this.getCommand(command)
-        if (!command) return console.error("You can't create syntax error with unkown command!")
-        let text = await this.getMessage(guild, "SYNTAX_ERROR", {
-            PREFIX: await this.getPrefix(guild),
-            COMMAND: command.name,
-            ARGUMENTS: command.expectedArgs || ""
+    async createSyntaxError(message, command, paramIndex, type) {
+        if (!message) throw new TypeError("Insufficient data for create syntax error!")
+        if (!command) throw new TypeError("Insufficient data for create syntax error!")
+        if (!paramIndex && paramIndex !== 0) throw new TypeError("Insufficient data for create syntax error!")
+        if (!type) throw new TypeError("Insufficient data for create syntax error!")
+
+        type = type.toLocaleUpperCase();
+        command = this.getCommand(command);
+        if (!command) return console.error("You can't create syntax error with unkown command!");
+        if (!this.syntaxErrorTypes.includes(type)) throw new Error("Unkown syntax error type!");
+
+
+
+        let ARGUMENTS = "";
+
+        command.usage.params.forEach((data) => {
+            if (data.required === true) {
+                ARGUMENTS += "[" + data.param + "] "
+            } else {
+                ARGUMENTS += "<" + data.param + "> "
+            }
+            return;
         })
-        return text;
+        let err = await this.getMessage(message.guild, `SYNTAX_ERROR.${type}`, {
+            PARAM: command.usage.params[paramIndex].required === true ? `[${command.usage.params[paramIndex].param}]` : `<${command.usage.params[paramIndex].param}>`,
+            PREFIX: await this.getPrefix(message.guild),
+            COMMAND: command.name,
+            ARGUMENTS
+        })
+
+        return err;
+
     }
+
+    // /**
+    //  * @param {DiscordJS.Guild} guild
+    //  * @param {string} command 
+    //  * @returns {Promise<string>}
+    //  */
+    // async newSyntaxError(guild, command) {
+    //     command = this.getCommand(command)
+    //     if (!command) return console.error("You can't create syntax error with unkown command!")
+    //     let text = await this.getMessage(guild, "SYNTAX_ERROR", {
+    //         PREFIX: await this.getPrefix(guild),
+    //         COMMAND: command.name,
+    //         ARGUMENTS: command.expectedArgs || ""
+    //     })
+    //     return text;
+    // }
     /////////////////////////////////////////////////////////////////////////////////////////////////
     //Help
     /**
@@ -516,7 +614,8 @@ class CommandHandler extends EventEmitter {
          * @example
          * {
         embed: {
-            color: "RED"
+            color: "RED",
+            withPages: true
         },
         authoritativePerms: [
             "ADMINISTRATOR",
@@ -600,10 +699,10 @@ class CommandHandler extends EventEmitter {
         return result;
     }
     /**
-         * 
-         * @param {string} name 
-         * @returns {boolean}
-         */
+     * 
+     * @param {string} name 
+     * @returns {boolean}
+     */
     isNameUsed(name) {
         let result;
 
@@ -630,10 +729,10 @@ class CommandHandler extends EventEmitter {
         return result;
     }
     /**
-         * 
-         * @param {string} name 
-         * @returns {category}
-         */
+     * 
+     * @param {string} name 
+     * @returns {category}
+     */
     getCategoryByName(name) {
         let result;
 
@@ -650,7 +749,8 @@ class CommandHandler extends EventEmitter {
      */
     getCategories(message) {
         let authoritativePerms = this.helpSettings.authoritativePerms || [];
-        let perm = false, categories = this.categories
+        let perm = false,
+            categories = this.categories
         for (let i = 0; i < authoritativePerms.length; i++) {
             let _perm = authoritativePerms[i];
             if (message.member.hasPermission(_perm)) perm = true
@@ -712,10 +812,10 @@ class CommandHandler extends EventEmitter {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //Prefix
     /**
-        * 
-        * @param {string} prefix 
-        * @returns {CommandHandler}
-        */
+     * 
+     * @param {string} prefix 
+     * @returns {CommandHandler}
+     */
     setDefaultPrefix(prefix) {
         if (typeof prefix !== 'string') throw new TypeError('Prefix must be string!');
         this.defaultPrefix = prefix;
@@ -733,7 +833,8 @@ class CommandHandler extends EventEmitter {
             if (this.isDbConnected()) {
                 const result = await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 if (!result.prefix) {
-                    result.prefix = this.defaultPrefix; await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id, prefix: this.defaultPrefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                    result.prefix = this.defaultPrefix;
+                    await prefixSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id, prefix: this.defaultPrefix }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 };
 
                 prefix = result.prefix;
@@ -741,8 +842,7 @@ class CommandHandler extends EventEmitter {
             } else {
                 prefix = this.defaultPrefix;
             }
-        }
-        else prefix = this.defaultPrefix;
+        } else prefix = this.defaultPrefix;
 
         return prefix;
     }
@@ -779,48 +879,33 @@ class CommandHandler extends EventEmitter {
      */
     isCommandHas(command) {
         let has
-        const commands = this.commands;
-        if (commands.has(command.toLocaleLowerCase())) {
-            has = true
-        } else {
+        let commands = this.commands;
+        let aliases = this.aliases;
+        let _command = command.toLocaleLowerCase();
 
-            for (let i = 0; i < commands.size; i++) {
-                let cmd = commands.first(i + 1)[i]
-                if (cmd.aliases && cmd.aliases.includes(command.toLocaleLowerCase())) has = true
-            }
-        }
-        return has;
+        if (commands.has(_command)) return true;
+        else if (aliases.has(_command)) return true;
+        else return false;
     }
     /**
-        * 
-        * @param {string} command 
-        * @returns {object}
-        */
+     * 
+     * @param {string} command 
+     * @returns {object}
+     */
     getCommand(command) {
         let cmd;
-
         let commands = this.commands;
-        for (let i = 0; i < commands.size; i++) {
-            let commandNamee = commands.first(i + 1)[i].name
-            let cmd = commands.first(i + 1)[i];
-            if (commandNamee === command) {
-                return cmd;
-            } else if (cmd.aliases) {
-                if (cmd.aliases === command.toLocaleLowerCase() || cmd.aliases.includes(command.toLocaleLowerCase())) {
-                    return cmd
-                } else {
-                    cmd = undefined;
-                }
-            }
-        }
+        let aliases = this.aliases;
+        let _command = command.toLocaleLowerCase()
 
-        return cmd;
+        cmd = commands.get(_command) || aliases.get(_command);
+        return cmd
     }
     /**
-         * 
-         * @param {string} dir 
-         * @returns {CommandHandler}
-         */
+     * 
+     * @param {string} dir 
+     * @returns {CommandHandler}
+     */
     setCommandsDir(dir) {
         if (typeof dir !== 'string') throw new TypeError('Directory must be string!');
 
@@ -891,10 +976,10 @@ class CommandHandler extends EventEmitter {
         return this.mongoURI;
     }
     /**
-    * 
-    * @param {string} uri
-    * @returns {CommandHandler}
-    */
+     * 
+     * @param {string} uri
+     * @returns {CommandHandler}
+     */
     setMongoURI(uri) {
         if (typeof uri !== 'string') throw new TypeError('mongoDB uri must be string!');
 

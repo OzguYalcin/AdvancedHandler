@@ -1,7 +1,14 @@
 const ChannelSchema = require('../models/channel-schema');
 module.exports = {
-    minArgs: 3,
-    expectedArgs: '<enable | disable> <command | all> <tag channel | tag channels>',
+    usage: {
+        maxArgs: 3,
+        minArgs: 2  ,
+        params: [
+            "[enable | disable]",
+            "[command | all]",
+            "<tag channel | tag channels>"
+        ]
+    },
     guildOnly: true,
     requiredPermissions: ['ADMINISTRATOR'],
     category: 'Configuration',
@@ -21,9 +28,8 @@ module.exports = {
                 COMMAND: command
             }))
         }
-
         if (channels.size === 0) {
-            return message.reply(await instance.newSyntaxError(guild, "channel"));
+            return message.reply(await instance.createSyntaxError(message, "channel", 2, "REQUIRED_PARAM"));
         }
 
 
@@ -152,7 +158,7 @@ module.exports = {
 
             }
         } else {
-            return message.reply(await instance.newSyntaxError(guild, "channel"));
+            return message.reply(await instance.createSyntaxError(message, "requiredroles", 2, "INCORRECT_USAGE"));
         }
     }
 }

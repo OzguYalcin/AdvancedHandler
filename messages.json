@@ -4,11 +4,11 @@
         "tr": "Bu komutu yalnızca bot sahibi çalıştırabilir."
     },
     "GUILD_ONLY_COMMAND": {
-        "en": "This command can only be used within a server.",
+        "en": "This command can only be used within a guild.",
         "tr": "Bu komut yalnızca bir sunucu içinde kullanılabilir."
     },
     "TEST_ONLY": {
-        "en": "This command can only be used on test servers.",
+        "en": "This command can only be used on test guilds.",
         "tr": "Bu komut sadece test sunucusunda kullanılabilir."
     },
     "MISSING_PERMISSION": {
@@ -36,8 +36,22 @@
         "tr": "Özel bir mesajda önek belirleyemezsiniz."
     },
     "SYNTAX_ERROR": {
-        "en": "Incorrect usage! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\"",
-        "tr": "Yanlış kullanım! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
+        "MIN_ARGS": {
+            "en": "Missing parameter! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\".",
+            "tr": "Eksik parametre! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
+        },
+        "MAX_ARGS": {
+            "en": "Extra parameter! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\".",
+            "tr": "Ekstra parameter! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
+        },
+        "REQUIRED_PARAM": {
+            "en": "\"{PARAM}\" parameter is required! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\".",
+            "tr": "\"{PARAM}\" parametresi gerekli! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
+        },
+        "INCORRECT_USAGE": {
+            "en": "Incorrect usage! Please use \"{PREFIX}{COMMAND} {ARGUMENTS}\".",
+            "tr": "Yanlış kullanım! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
+        }
     },
     "UNKOWN_COMMAND": {
         "en": "Could not find command \"{COMMAND}\"!",
@@ -58,6 +72,10 @@
     "REQUIRED_ROLE_ALREADY_REMOVED": {
         "en": "\"{ROLE}\" already removed to command \"{COMMAND}\".",
         "tr": "\"{ROLE}\" rolü \"{COMMAND}\" komutundan zaten çıkartılmış."
+    },
+    "ALL_REQUIRED_ROLES_DELETED": {
+        "en": "All required roles are removed to all commands for this guild.",
+        "tr": "Bütün roller bu sunucu için bütün komutlardan çıkartıldı."
     },
     "MISSING_ROLES": {
         "en": "You do not have the required roles to use this command! You need one of the following: \"{ROLE}\".",
@@ -94,11 +112,11 @@
         "tr": "Dil \"{LANG}\" olarak ayarlandı."
     },
     "COMMAND_ALREADY_ENABLED": {
-        "en": "This command is already enabled for this server.",
+        "en": "This command is already enabled for this guild.",
         "tr": "Bu komut bu sunucu için zaten etkinleştirilmiş."
     },
     "COMMAND_ALREADY_DISABLED": {
-        "en": "This command is already disabled for this server.",
+        "en": "This command is already disabled for this guild.",
         "tr": "Bu komut bu sunucu için zaten devre dışı."
     },
     "COMMAND_NOW_ENABLED": {
@@ -110,7 +128,7 @@
         "tr": "\"{COMMAND}\" komutu devre dışı."
     },
     "COMMAND_DISABLED": {
-        "en": "This command is disabled for this server.",
+        "en": "This command is disabled for this guild.",
         "tr": "Bu komut bu sunucu için devre dışı."
     },
     "THIS_COMMAND_CAN_NOT_BE_DISABLE": {
@@ -146,19 +164,19 @@
         "tr": "Bu kanal bu komut için devre dışı."
     },
     "STATS_ALREADY_ON": {
-        "en": "Statistics already on for this server.",
+        "en": "Statistics already on for this guild.",
         "tr": "İstatistikler bu sunucu için zaten açık."
     },
     "STATS_ALREADY_OFF": {
-        "en": "Statistics already off for this server.",
+        "en": "Statistics already off for this guild.",
         "tr": "İstatistikler bu sunucu için zaten kapalı."
     },
     "STATS_ON": {
-        "en": "Statistics is on for this server.",
+        "en": "Statistics is on for this guild.",
         "tr": "İstatistikler bu sunucu için açıldı."
     },
     "STATS_OFF": {
-        "en": "Statistics is off for this server. You can delete the counters.",
+        "en": "Statistics is off for this guild. You can delete the counters.",
         "tr": "İstatistikler bu sunucu için kapatıldı. Sayaçları silebilirsiniz."
     },
     "TAG_USER": {
@@ -190,11 +208,45 @@
         "tr": "Karalistedesin bu yüzden hiçbir komutu kullanamazsın!"
     },
     "YOU_CAN'T_SET_OWNER_TO_BLACKLIST": {
-        "en":"You can't set owner to the blacklist!",
+        "en": "You can't set owner to the blacklist!",
         "tr": "Karalisteye sahip(ler)i ekleyemezsin!"
     },
     "EXCEPTION": {
         "en": "An error occurred when running this command! This error has been reported to the developers.",
         "tr": "Komutu çalıştırırken bir hata meydana geldi! Bu hata yetkililere bildirildi."
+    },
+    "DASHBOARD": {
+        "ALREADY_OFF": {
+            "en": "",
+            "tr": ""
+        },
+        "ALREADY_ON": {
+            "en": "",
+            "tr": ""
+        },
+        "USER_ALREADY_SET": {
+            "en": "",
+            "tr": ""
+        },
+        "USER_ALREADY_DELETE": {
+            "en": "",
+            "tr": ""
+        },
+        "ON": {
+            "en": "",
+            "tr": ""
+        },
+        "OFF": {
+            "en": "",
+            "tr": ""
+        },
+        "USER_SET": {
+            "en": "",
+            "tr": ""
+        },
+        "USER_DELETE": {
+            "en": "",
+            "tr": ""
+        }
     }
 }

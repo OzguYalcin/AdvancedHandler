@@ -1,9 +1,13 @@
 const StatsSchema = require('../models/stats-schema');
 
 module.exports = {
-    minArgs: 1,
-    maxArgs: 1,
-    expectedArgs: "<on | off>",
+    usage: {
+        minArgs: 1,
+        maxArgs: 1,
+        params: [
+            "[on | off]"
+        ]
+    },
     category: "Statistics",
     description: "Make stats on or off.",
     globalCooldown: "10m",
@@ -21,7 +25,7 @@ module.exports = {
         let result = await StatsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true })
 
         if (!["on", "off"].includes(choose)) {
-            return message.reply(await instance.newSyntaxError(message.guild, "stats"));
+            return message.reply(await instance.createSyntaxError(message, "stats", 0, "INCORRECT_USAGE"));
         }
 
         if (await instance.isStatsOn(guild) && choose === "on") {

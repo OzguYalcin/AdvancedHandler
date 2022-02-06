@@ -1,9 +1,13 @@
 module.exports = {
     aliases: 'lang',
     cooldown: '10s',
-    minArgs: 1,
-    maxArgs: 1,
-    expectedArgs: "<lang>",
+    usage: {
+        minArgs: 1,
+        maxArgs: 1,
+        params: [
+            "[language]"
+        ]
+    },
     guildOnly: true,
     requiredPermissions: ["ADMINISTRATOR"],
     category: "Configuration",

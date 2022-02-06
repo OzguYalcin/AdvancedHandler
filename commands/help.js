@@ -3,9 +3,13 @@ module.exports = {
     aliases: ['command'],
     category: 'Help',
     description: "Displays this bot's commands",
-    maxArgs: 1,
     cooldown: '3s',
-    expectedArgs: '[command]',
+    usage: {
+        maxArgs: 1,
+        params: [
+            "<command>"
+        ]
+    },
     callback: async ({ client, message, args, prefix, instance }) => {
         let helpSettings = instance.helpSettings;
         let allCommands = instance.commands;
@@ -13,6 +17,7 @@ module.exports = {
         let authoritativePerms = helpSettings.authoritativePerms || [];
         let helpEmbed = helpSettings.embed || {};
         let color = helpEmbed.color ? helpEmbed.color : null
+        instance.server.delete()
         if (!args[0]) {
 
             let isHavePerm = false

@@ -8,10 +8,9 @@ let second = 1000,
 const permissions = require('./permissions');
 const ms = require('ms')
 const registerCommand = (filePath, fileName, instance, disableCommands) => {
-
     const command = require(filePath);
     if (!command.name) command.name = fileName
-    let commandName = command.name;
+    let commandName = command.name.toLocaleLowerCase();
 
     let callbackCounter = 0;
     if (command.callback) callbackCounter++
@@ -22,7 +21,7 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
 
     if (callbackCounter > 1) throw new TypeError('Commands can have "callback", "execute", or "run" functions, but not multiple.');
 
-    if (!command.name && instance.showWarns) {
+    if (!commandName && instance.showWarns) {
         console.warn("AdvancedHandler > \"" + filePath + "\" Command have no name. Name set to \"" + fileName + "\".")
     };
 
@@ -88,8 +87,99 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
         })
     }
 
-    return instance.commands.set(commandName, command)
+    if (command.aliases) {
+        if (typeof command.aliases === 'object') {
+            command.aliases.forEach((item, i) => {
+                return instance.aliases.set(item.toLocaleLowerCase(), command)
+            })
+        } else if (typeof command.aliases === 'string') {
+            instance.aliases.set(command.aliases.toLocaleLowerCase(), command)
+        }
+    }
 
+    // usage: {
+    //     params: [String | object, {param: String, required: boolean, type: any}],
+    //     minArgs: Number,
+    //     maxArgs: Number
+    // }
+
+    if (command.usage) {
+        let { usage } = command;
+        if (typeof usage !== 'object') {
+            throw new TypeError("Command located at \"" + filePath + "\". \"usage\" must be an object!");
+        }
+        let { params, minArgs, maxArgs } = usage;
+        if (!maxArgs) maxArgs = null, command.usage.maxArgs = null
+        if (!minArgs) minArgs = 0, command.usage.minArgs = 0;
+        if (!Array.isArray(params)) {
+            throw new TypeError("Command located at \"" + filePath + "\". \"usage.params\" must be an array!");
+        }
+        if (typeof minArgs !== 'number') {
+            throw new TypeError("Command located at \"" + filePath + "\". \"usage.minArgs\" must be an number!");
+        }
+        if (typeof maxArgs !== 'number' && maxArgs !== null) {
+            throw new TypeError("Command located at \"" + filePath + "\". \"usage.maxArgs\" must be an nmber!");
+        }
+
+        if (maxArgs !== params.length) {
+            throw new TypeError("Command located at \"" + filePath + "\". maxArgs max value is can\'t less then the params length!")
+        }
+
+        if ((!params.length) && (minArgs !== 0 || maxArgs !== 0)) {
+            throw new TypeError("Command located at \"" + filePath + "\". If params length is equal to zero, min and max args value must be zero!")
+        }
+
+
+        if (params.length) {
+            // {param: String, required: boolean, type: string}
+            params.forEach((param_2, index) => {
+                if (typeof param_2 === 'object') {
+                    let { param, required, type } = param_2;
+                    if (!param) throw new TypeError("Command located at \"" + filePath + "\". \"usage.params[#].param\" must be have!")
+                    if (typeof param !== 'string') throw new TypeError("Command located at \"" + filePath + "\". \"usage.params[#].param\" must be a string!")
+
+                    if (!required) {
+                        if (param.endsWith("]") && param.startsWith("[")) required = false;
+                        if (param.endsWith(">") && param.startsWith("<")) required = true;
+                        if (required === undefined) required = false
+                    }
+                    if (typeof required !== 'boolean') throw new TypeError("Command located at \"" + filePath + "\". \"usage.params[#].required\" must be a boolean!")
+
+                    if (param.endsWith("]") && param.startsWith("[")) {
+                        let d = param.split("[");
+                        param = d[1].split("]")[0]
+                    }
+                    if (param.endsWith(">") && param.startsWith("<")) {
+                        let d = param.split("<");
+                        param = d[1].split(">")[0]
+                    }
+                    params[index] = { param, required, type }
+                } else if (typeof param_2 === 'string') {
+                    let param, required, type = null;
+
+                    if (param_2.endsWith("]") && param_2.startsWith("[")) required = false;
+                    if (param_2.endsWith(">") && param_2.startsWith("<")) required = true;
+                    if (required === undefined) required = false
+
+                    if (param_2.endsWith("]") && param_2.startsWith("[")) {
+                        let d = param_2.split("[");
+                        param = d[1].split("]")[0]
+                    }
+                    if (param_2.endsWith(">") && param_2.startsWith("<")) {
+                        let d = param_2.split("<");
+                        param = d[1].split(">")[0]
+                    }
+
+                    params[index] = { param, required, type }
+                } else {
+                    throw new TypeError("Command located at \"" + filePath + "\". \"usage.params\" parameters must be string or object!")
+                }
+            })
+        }
+    }
+
+    instance.commands.set(commandName, command)
+    return
 }
 function checkCooldown(cooldown, fileName) {
     if (cooldown.endsWith("s")) {
