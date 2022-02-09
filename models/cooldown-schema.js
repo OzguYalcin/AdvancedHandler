@@ -4,7 +4,7 @@ const reqString = {
     required: true,
 };
 const Schema = new mongoose.Schema({
-    // guildID-userID
+    // guildId-userID
     _id: reqString,
     name: reqString,
     cooldown: {

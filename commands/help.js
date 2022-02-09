@@ -7,7 +7,7 @@ module.exports = {
     usage: {
         maxArgs: 1,
         params: [
-            "<command>"
+            "[command]"
         ]
     },
     callback: async ({ client, message, args, prefix, instance }) => {
@@ -17,7 +17,6 @@ module.exports = {
         let authoritativePerms = helpSettings.authoritativePerms || [];
         let helpEmbed = helpSettings.embed || {};
         let color = helpEmbed.color ? helpEmbed.color : null
-        instance.server.delete()
         if (!args[0]) {
 
             let isHavePerm = false
@@ -79,6 +78,9 @@ module.exports = {
             }
         } else {
             let command = instance.getCommand(args[0]);
+            if(!command) return message.reply(await instance.getMessage(message.guild, "UNKOWN_COMMAND", {
+                COMMAND: args[0]
+            }))
             let aliasesText = "`"
 
             if (typeof command.aliases === 'object') {

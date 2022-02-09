@@ -10,8 +10,8 @@ module.exports = {
         maxArgs: 2,
         minArgs: 1,
         params: [
-            "[set | delete | clean]",
-            "<user@ | userId>"
+            "<set | delete | clean>",
+            "[user@ | userId]"
         ]
     },
     callback: async ({ client, message, args, instance, prefix, text, guild }) => {

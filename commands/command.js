@@ -1,11 +1,11 @@
 const DiscordJS = require('discord.js');
-const CommandSchema = require('../models/command-schema');
+const commandSchema = require('../models/command-schema.js');
 module.exports = {
     usage: {
-        minArgs: 2,
+        minArgs: 1,
         maxArgs: 2,
         params: [
-            "[enable |disable]",
+            "<enable | disable | clean>",
             "[command]"
         ]
     },
@@ -21,39 +21,48 @@ module.exports = {
         }
 
         let choice = args[0].toLocaleLowerCase();
-        let command = args[1].toLocaleLowerCase();
+        let command = args[1] ? args[1].toLocaleLowerCase() : undefined
 
-        if (!instance.isCommandHas(command)) {
+        if (choice !== 'clean' && !instance.isCommandHas(command)) {
             return message.reply(await instance.getMessage(guild, "UNKOWN_COMMAND", { COMMAND: command }));
         }
 
-        command = instance.getCommand(args[1].toLocaleLowerCase());
-        const commandName = command.name;
-        let isCommandDisabled = await instance.isCommandDisabled(guild, commandName)
+        command = command ? instance.getCommand(args[1].toLocaleLowerCase()) : command
+        const commandName = command ? command.name : undefined;
+        let isCommandDisabled = command ? await instance.isCommandDisabled(guild, commandName) : undefined;
+        if (choice === 'clean') {
+            const disableCommands = await commandSchema.find({ guildId: guild.id });
+console.log(disableCommands)
+            disableCommands.forEach(async (item) => {
+                console.log(item)
+               const deleteDisableCommand =  await commandSchema.findOneAndDelete({ guildId: guild.id, command: item.command });
+               console.log(deleteDisableCommand)
+            })
+            return message.reply(await instance.getMessage(guild, "DISABLE_COMMANDS_CLEANED"))
+        } else
+            if (choice === 'enable' && !isCommandDisabled) {
+                return message.reply(await instance.getMessage(guild, "COMMAND_ALREADY_ENABLED", { COMMAND: commandName }));
+            } else if (choice === 'enable' && isCommandDisabled) {
+                await commandSchema.findOneAndDelete({ guildId: guild.id, command: commandName })
+                return message.reply(await instance.getMessage(guild, "COMMAND_NOW_ENABLED", { COMMAND: commandName }));
+            } else if (choice === 'disable' && isCommandDisabled) {
+                return message.reply(await instance.getMessage(guild, "COMMAND_ALREADY_DISABLED", { COMMAND: commandName }))
+            } else if (choice === 'disable' && !isCommandDisabled) {
+                if (commandName.toLocaleLowerCase() === 'command') {
+                    return message.reply(await instance.getMessage(guild, "THIS_COMMAND_CAN_NOT_BE_DISABLE", {
+                        COMMAND: "command"
+                    }))
+                }
+                new commandSchema({
+                    guildId: guild.id,
+                    command: commandName
+                }).save()
 
-        if (choice === 'enable' && !isCommandDisabled) {
-            return message.reply(await instance.getMessage(guild, "COMMAND_ALREADY_ENABLED", { COMMAND: commandName }));
-        } else if (choice === 'enable' && isCommandDisabled) {
-            await CommandSchema.findOneAndDelete({ guildID: guild.id, command: commandName })
-            return message.reply(await instance.getMessage(guild, "COMMAND_NOW_ENABLED", { COMMAND: commandName }));
-        } else if (choice === 'disable' && isCommandDisabled) {
-            return message.reply(await instance.getMessage(guild, "COMMAND_ALREADY_DISABLED", { COMMAND: commandName }))
-        } else if (choice === 'disable' && !isCommandDisabled) {
-            if (commandName.toLocaleLowerCase() === 'command') {
-                return message.reply(await instance.getMessage(guild, "THIS_COMMAND_CAN_NOT_BE_DISABLE", {
-                    COMMAND: "command"
-                }))
+                return message.reply(await instance.getMessage(guild, "COMMAND_NOW_DISABLED", { COMMAND: commandName }))
+            } else if (!['enable', 'disable', 'clean'].includes(choice)) {
+                return message.reply(await instance.newSyntaxError(message, "command", 0))
+            } else {
+                return message.reply(await instance.getMessage(guild, "SOMETHINK_WENT_WRONG"))
             }
-            new CommandSchema({
-                guildID: guild.id,
-                command: commandName
-            }).save()
-
-            return message.reply(await instance.getMessage(guild, "COMMAND_NOW_DISABLED", { COMMAND: commandName }))
-        } else if (!['enable', 'disable'].includes(choice)) {
-            return message.reply(await instance.newSyntaxError(message, "command", 0))
-        } else {
-            return message.reply(await instance.getMessage(guild, "SOMETHINK_WENT_WRONG"))
-        }
     }
 }

@@ -8,9 +8,9 @@ module.exports = {
         minArgs: 1,
         maxArgs: 3,
         params: [
-            "[add | remove | clean]",
-            "<command>",
-            "<roleId | mentioned role>"
+            "<add | remove | clean>",
+            "[command]",
+            "[roleId | mentioned role]"
         ]
     },
     guildOnly: true,
@@ -38,10 +38,10 @@ module.exports = {
             }
             if (args[0].toLocaleLowerCase() === "add") {
                 const result = await requiredRolesSchema.findOneAndUpdate({
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name
                 }, {
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name,
                 }, {
                     upsert: true,
@@ -54,10 +54,10 @@ module.exports = {
                 }
 
                 await requiredRolesSchema.findOneAndUpdate({
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name
                 }, {
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name,
                     $addToSet: {
                         requiredRoles: role.id
@@ -71,10 +71,10 @@ module.exports = {
                 return message.reply(await instance.getMessage(message.guild, "ADDED_REQUIRED_ROLE", { ROLE: role.name, COMMAND: command.name }))
             } else if (args[0].toLocaleLowerCase() === "remove") {
                 const result = await requiredRolesSchema.findOneAndUpdate({
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name
                 }, {
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name,
                 }, {
                     upsert: true,
@@ -86,10 +86,10 @@ module.exports = {
                 }
 
                 await requiredRolesSchema.findOneAndUpdate({
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name
                 }, {
-                    guildID: message.guild.id,
+                    guildId: message.guild.id,
                     command: command.name,
                     $pull: {
                         requiredRoles: role.id

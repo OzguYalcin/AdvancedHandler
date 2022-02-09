@@ -11,7 +11,7 @@ const registerCommand = (filePath, fileName, instance, disableCommands) => {
     const command = require(filePath);
     if (!command.name) command.name = fileName
     let commandName = command.name.toLocaleLowerCase();
-
+    if (disableCommands.includes(commandName)) return
     let callbackCounter = 0;
     if (command.callback) callbackCounter++
     if (command.execute) callbackCounter++

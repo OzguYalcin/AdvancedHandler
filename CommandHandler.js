@@ -17,9 +17,6 @@ const disableCommandsSchema = require('./models/command-schema');
 const channelSchema = require('./models/channel-schema');
 const statsSchema = require('./models/stats-schema');
 const blacklistSchema = require('./models/blacklist-schema');
-const { Dashboard } = require('./Dashboard/app.js');
-const express = require('express');
-const dashboardSchema = require('./models/dashboard-statu-schema');
 
 /**
  * @constructor
@@ -41,7 +38,7 @@ class CommandHandler extends EventEmitter {
         this.mongoURI = options.mongoURI;
         this.ignoreBots = options.ignoreBots || true;
         this.showWarns = options.showWarns || true;
-        this.disableCommands = options.disableDefaultCommands || [];
+        this.disableCommands = options.disableDefaultCommands;
         this.botOwners = options.botOwners;
         this.testServers = options.testServers;
         this.messagesPath = options.messagesPath || path.join(__dirname, 'messages.json');
@@ -51,7 +48,6 @@ class CommandHandler extends EventEmitter {
         this.aliases = new DiscordJS.Collection();
         this.categories = new DiscordJS.Collection();
         this.categories.set('Uncategorized Commands', { name: "Uncategorized Commands", emoji: "❔", custom: false, hidden: false })
-        this.hiddenCategories = new DiscordJS.Collection();
         this.helpSettings = {};
         this.categories.set("Help", { name: "Help", emoji: "❓", custom: false, hidden: false });
         this.categories.set("Configuration", { name: "Configuration", emoji: "🔨", custom: false, hidden: false });
@@ -69,8 +65,6 @@ class CommandHandler extends EventEmitter {
         this.disableCommandWhenException = options.disableCommandWhenException || false;
 
         this.syntaxErrorTypes = ["MIN_ARGS", "MAX_ARGS", "REQUIRED_PARAM"];
-        if (typeof this.port !== 'number') throw new TypeError("Port value must be a number!");
-        mongo(this.mongoURI, this.dpOptions, this)
         if (this.showWarns === true) {
             if (!this.commandsDir) this.commandsDir = "commands", console.warn("AdvancedHandler > No commands dir specified. Using \"commands\".");
             if (!this.mongoURI) console.warn("AdvancedHandler > No mongoDB connection uri. Some features don\'t work!");
@@ -78,26 +72,23 @@ class CommandHandler extends EventEmitter {
         if (fs.existsSync(this.commandsDir)) {
             let files = getAllFiles(path.join(require.main.path, this.commandsDir));
             let amount = files.length;
-            if (amount <= 0) {
-                return;
+            if (!amount <= 0) {
+                console.log("AdvancedHandler > Loaded " + amount + " command" + (amount === 1 ? "" : "s") + ".");
             }
-            console.log("AdvancedHandler > Loaded " + amount + " command" + (amount === 1 ? "" : "s") + ".");
             for (let _c = 0, files_1 = files; _c < files_1.length; _c++) {
                 let _d = files_1[_c], file = _d[0], fileName = _d[1];
                 registerCommand(`${file}`, fileName, this, this.disableCommands);
             }
             const defaultFiles = getAllFiles(path.join(__dirname, 'commands'));
             for (let i = 0; i < defaultFiles.length; i++) {
-                if (this.disableCommands && this.disableCommands.includes(defaultFiles[i][1])) continue;
                 registerCommand(defaultFiles[i][0], defaultFiles[i][1], this, this.disableCommands);
             }
-
-
         } else throw new Error('Commands directory "' + this.commandsDir + '" doesn\'t exist!');
     }
     ////////////////////
 
     async run() {
+        mongo(this.mongoURI, this.dpOptions, this)
 
         this.categories.forEach((category) => {
             this.categories.commands = this.commands.filter((c) => c.category == category.name);
@@ -117,7 +108,6 @@ class CommandHandler extends EventEmitter {
             let firstElement = args.shift().toLocaleLowerCase();
 
             let isCmdHas = this.isCommandHas(firstElement)
-
             if (!isCmdHas) return;
 
             const command = this.getCommand(firstElement);
@@ -223,7 +213,7 @@ class CommandHandler extends EventEmitter {
             }
 
             if (this.isDbConnected() && message.guild) {
-                const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildID: message.guild.id, command: command.name }, { guildID: message.guild.id, command: command.name }, { upsert: true, new: true, setDefaultsOnInsert: true });
+                const reqRoles = await reqRolesSchema.findOneAndUpdate({ guildId: message.guild.id, command: command.name }, { guildId: message.guild.id, command: command.name }, { upsert: true, new: true, setDefaultsOnInsert: true });
                 let roleResult = [];
                 if (reqRoles.requiredRoles) {
                     if (typeof reqRoles.requiredRoles === 'object') {
@@ -467,18 +457,6 @@ class CommandHandler extends EventEmitter {
         if (typeof showWarns !== 'boolean') throw new TypeError('Show warns must be boolean!');
 
         this.showWarns = showWarns;
-
-        return this;
-    }
-    /**
-     * 
-     * @param {Array<string>} owners 
-     * @returns {CommandHandler} 
-     */
-    setBotOwner(owners) {
-        if (typeof owners !== 'object') throw new TypeError('Owners must be array!');
-
-        this.botOwners = owners;
 
         return this;
     }
@@ -862,18 +840,6 @@ class CommandHandler extends EventEmitter {
     //command
     /**
      * 
-     * @param {object} commands 
-     * @returns {CommandHandler}
-     */
-    setDisableDefaultCommands(commands) {
-        if (typeof commands !== 'object') throw new TypeError('Disable default commands must be array!');
-
-        this.disableCommands = commands;
-
-        return this;
-    }
-    /**
-     * 
      * @param {string} command 
      * @returns {boolean}
      */
@@ -921,7 +887,7 @@ class CommandHandler extends EventEmitter {
      */
     async isCommandDisabled(guild, command) {
         command = this.getCommand(command)
-        let result = await disableCommandsSchema.findOne({ guildID: guild.id, command: command.name });
+        let result = await disableCommandsSchema.findOne({ guildId: guild.id, command: command.name });
         let returns = false
         if (result !== null) returns = true
         return returns
@@ -936,7 +902,7 @@ class CommandHandler extends EventEmitter {
     async isChannelDisabled(guild, command, channel) {
         command = this.getCommand(command)
         let output = false
-        let result = await channelSchema.findOne({ guildID: guild.id, command: command.name });
+        let result = await channelSchema.findOne({ guildId: guild.id, command: command.name });
         if (result === null) return output;
         if (result !== null && result.channels !== null && result.channels.includes(channel.id)) output = true;
 
@@ -1036,8 +1002,6 @@ class CommandHandler extends EventEmitter {
     async iStatsCategoryHas(guild) {
 
         let result = await statsSchema.findOneAndUpdate({ _id: guild.id }, { _id: guild.id }, { upsert: true, new: true, setDefaultsOnInsert: true });
-
-        counter = counter.toLocaleLowerCase();
 
         let ch = guild.channels.cache.get(result.categoryId);
 

@@ -4,8 +4,8 @@ const reqString = {
     required: true,
 };
 const Schema = new mongoose.Schema({
-    //guildID
-    guildID: reqString,
+    //guildId
+    guildId: reqString,
     command: reqString,
     //channels id
     channels: [String]

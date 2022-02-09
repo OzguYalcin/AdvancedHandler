@@ -131,6 +131,10 @@
         "en": "This command is disabled for this guild.",
         "tr": "Bu komut bu sunucu için devre dışı."
     },
+    "DISABLE_COMMANDS_CLEANED": {
+        "en": "All commands enable for this guild!",
+        "tr": "Bütün komutlar bu sunucu için kullanılabilir!"
+    },
     "THIS_COMMAND_CAN_NOT_BE_DISABLE": {
         "en": "\"{COMMAND}\" command can not be disabled!",
         "tr": "\"{COMMAND}\" komutu devre dışı bırakılamaz!"
@@ -214,39 +218,5 @@
     "EXCEPTION": {
         "en": "An error occurred when running this command! This error has been reported to the developers.",
         "tr": "Komutu çalıştırırken bir hata meydana geldi! Bu hata yetkililere bildirildi."
-    },
-    "DASHBOARD": {
-        "ALREADY_OFF": {
-            "en": "",
-            "tr": ""
-        },
-        "ALREADY_ON": {
-            "en": "",
-            "tr": ""
-        },
-        "USER_ALREADY_SET": {
-            "en": "",
-            "tr": ""
-        },
-        "USER_ALREADY_DELETE": {
-            "en": "",
-            "tr": ""
-        },
-        "ON": {
-            "en": "",
-            "tr": ""
-        },
-        "OFF": {
-            "en": "",
-            "tr": ""
-        },
-        "USER_SET": {
-            "en": "",
-            "tr": ""
-        },
-        "USER_DELETE": {
-            "en": "",
-            "tr": ""
-        }
     }
 }

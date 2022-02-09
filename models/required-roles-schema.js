@@ -4,7 +4,7 @@ const reqString = {
     required: true
 }
 const Schema = new mongoose.Schema({
-    guildID: reqString,
+    guildId: reqString,
     command: reqString,
     requiredRoles : {
         type: [String],

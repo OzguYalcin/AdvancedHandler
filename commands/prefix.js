@@ -6,7 +6,7 @@ module.exports = {
         minArgs: 1,
         maxArgs: 1,
         params: [
-            "[prefix]"
+            "<New prefix>"
         ]
     },
     cooldown: '3s',

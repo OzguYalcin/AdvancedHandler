@@ -1,13 +1,13 @@
 # AdvancedHandler
-Advanced DiscordJS Command & Feature Handler. This Command Handler is made for discord bot developers and makes botting easy.
+AdvancedHandler is a Discord.JS handler made by OzguYalcin. The goal of this package is to make it simple and easy to get your bot off the ground without worrying about your own command handler.
 
-# Installation
+# Installation 
 ## NPM
 ```
 npm install advancedhandler
 ```
 
-# Topics
+# Topics 
 - [AdvancedHandler](#advancedhandler)
 - [Installation](#installation)
   - [NPM](#npm)
@@ -19,34 +19,16 @@ npm install advancedhandler
   - [Ping pong command example](#ping-pong-command-example)
   - [Command properties](#command-properties)
   - [Correct argument usage](#correct-argument-usage)
+  - [Command initialization](#command-initialization)
   - [Bot owners only command](#bot-owners-only-command)
   - [Test servers](#test-servers)
   - [Handling command errors](#handling-command-errors)
   - [Command cooldowns](#command-cooldowns)
   - [Required user and bot permissions](#required-user-and-bot-permissions)
   - [Command categories and help settings](#command-categories-and-help-settings)
-  - [Instance methods](#instance-methods)
-    - [Shortcuts](#shortcuts-1)
-    - [Message methods](#message-methods)
-      - [getMessage](#getmessage)
-      - [newSyntaxError](#newsyntaxerror)
-    - [Language Methods](#language-methods)
-      - [setLanguage](#setlanguage)
-      - [getLanguage](#getlanguage)
-    - [Prefix methods](#prefix-methods)
-      - [setPrefix](#setprefix)
-      - [getPrefix](#getprefix)
-    - [Command methods](#command-methods)
-      - [isCommandHas](#iscommandhas)
-      - [getCommand](#getcommand)
-      - [isCommandDisabled](#iscommanddisabled)
-      - [isChannelDisabled](#ischanneldisabled)
-    - [mongoDB methods](#mongodb-methods)
-      - [isDbConnected](#isdbconnected)
-      - [getDbConnectionURI](#getdbconnectionuri)
+  - [Instance Methods](#instance-methods)
 - [Features](#features)
 - [Built-in Commands And Features](#built-in-commands-and-features)
-  - [Shortcuts](#shortcuts-2)
   - [Seting removing and cleaning blacklist](#seting-removing-and-cleaning-blacklist)
   - [Enabling and disabling commands](#enabling-and-disabling-commands)
   - [Configurable required roles](#configurable-required-roles)
@@ -66,99 +48,92 @@ npm install advancedhandler
 Here is a basic example of how to setup AdvancedHandler. When calling the constructor you can pass in an options object that configures AdvancedHandler to how you want. Here is a full example of all options:
 
 index.js
-```js
+```js 
 const DiscordJS = require('discord.js');
 const AdvancedHandler = require('advancedhandler');
 
 const client = new DiscordJS.Client();
 
 client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
-
-    // The client is a required as the first argument.
-    // The second argument is the options object and its not required.
-
     new AdvancedHandler.CommandHandler(client, {
-        // The name of the local folder for your command files
-        commandsDir: 'commands',
+      // Specified the directory the commands in
+      // Default 'commands'
+      commandsDir: 'commands',
+      
+      // Specified the prefix your bot should use
+      // Default "!"      
+      defaultPrefix: '$',
 
-        // The name of the local folder for your feature files
-        featuresDir: 'features',
+      // Specified the language your bot should use
+      // Must be supported in your messages.json file
+      // en = english, tr = turkish
+      defaultLang: 'en',
 
-        // The name of the local file for your message text and translations
-        // Omitting this will use the own messages path
-        messagesPath: '',
+      // If your commands should not be ran by a bot, default true
+      ignoreBots: true,
 
-        // Specified the prefix your bot should use
-        // Default "!"
-        defaultPrefix: "$",
+      // If AdvancedHandler warning should be shown or not, default true
+      showWarns: true,
 
-        // If AdvancedHandler warning should be shown or not, default true
-        showWarns: true,
+      //Specified the which default commands be disable
+      //If another command the name as same. Default command will be work
+      disableCommands: [
+          // 'blacklist',
+          // 'channel',
+          // 'command',
+          // 'help',
+          // 'language',
+          // 'prefix',
+          // 'required-roles', 
+          // 'stats'
+      ],
 
-        // Specified the language your bot should use
-        // Must be supported in your messages.json file
-        // en = english, tr = turkish
-        defaultLanguage: "en",
-        
-        //Specified the when error messages delete after send. -1 is message not delete.
-        errorMessageDelete: -1
+      // Specified the bot owners.
+      // Must be array
+      botOwners: [
+          'ownerId'
+      ],
 
-        // If your commands should not be ran by a bot, default true
-        ignoreBots: true,
+      // What server/guild IDs are used for testing only commands
+      // Must be array
+      testServers: [
+          'testServerId'
+      ],
 
-        // Your mongoDB connection uri. 
-        // If you don't use mongoDB database some features and commands will don't work
-        mongoURI: "MONGODB_CONNECTION_URI",
+      // The name of the local file for your message text and translations
+      // Omitting this will use the own messages path
+      messagesPath: '',
 
-        // Various options for your MongoDB database connection
-        dbOptions: {
-            // These 4 are the default options
-            keepAlive: true,
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            useFindAndModify: false,
-        },
+      // Your mongoDB connection uri. 
+      // If you don't use mongoDB database some features and commands will don't work
+      mongoURI: 'MONGODB_CONNECTION_URI',
 
-        // What server/guild IDs are used for testing only commands
-        // Must be array
-        testServers: [
-            'ID1',
-            'ID2',
-            'ID3'
-        ],
+      // Various options for your MongoDB database connection
+      dbOptions: {
+        keepAlive: true, 
+        useNewUrlParser: true, 
+        useUnifiedTopology: true, 
+        useFindAndModify: false
+      },
 
-        // Specified the bot owners.
-        // Must be array
-        botOwners: [
-            'ID1',
-            'ID2',
-            'ID3'
-        ],
-
-        //Specified the which default commands be disable
-        //If another command the name as same. Default command will be work
-        disabledDefaultCommands: [
-            // 'blacklist',
-            // 'channel',
-            // 'command',
-            // 'help',
-            // 'language',
-            // 'prefix',
-            // 'required-roles',
-            // 'stats'
-        ]
-    }).run()
+      // How many seconds to keep error messages before deleting them
+      // -1 means do not delete, defaults to -1
+      errorMessageDelete: 1000 * 60 * 2,
+      
+      // Disable command when exception
+      // Default false
+      disableCommandWhenException: true
+    }).run();
     //This function is so important.
     //If you don't call this function "CommandHandler" will don't work
 
-    // The client is a required as the first argument.
-    // The second argument is the feature file and its not required.
+  // The client is a required as the first argument.
+  // The second argument is the feature file and its not required.
 
-    new AdvancedHandler.FeatureHandler(client, 'features')
+  new AdvancedHandler.FeatureHandler(client, 'features');
+  
+  client.login("YOUR SECRET TOKEN");
 })
-
-client.login("YOUR TOKEN");
 ```
 
 # CommandHandler Main File Methods
@@ -166,105 +141,84 @@ Here the methods for using in main file:
 
 ```js
 new AdvancedHandler.CommandHandler(client)
-    // It set the "ignoreBots". Must be boolean
-    .setIgnoreBots(true)
+        // It set the "ignoreBots". Must be boolean
+        .setIgnoreBots(true)
 
-    // It set the "showWarns". Must be boolean
-    .setShowWarns(true)
+        // It set the "showWarns". Must be boolean
+        .setShowWarns(true)
+        
+        // It set the "testServers". Must be array
+        .setTestServers([
+          'ID1',
+          'ID2',
+          'ID3'
+        ])
 
-    // It set the "botOwners". Must be array
-    .setBotOwners([
-        'ID1',
-        'ID2',
-        'ID3'
-    ])
+        // It set the "messagesPath". Must be string
+        .setMessagesPath("your path here")
 
-    // It set the "testServers". Must be array
-    .setTestServers([
-        'ID1',
-        'ID2',
-        'ID3'
-    ])
-
-    // It set the "messagesPath". Must be string
-    .setMessagesPath("your path here")
-
-    // It customize the help menu 
-    // Must be object
-    // Must specified a category.
-    .setHelpSettings({
-        embed: {
+        // It customize the help menu 
+        // Must be object
+        // Must specified a category.
+        .setHelpSettings({
+          embed: {
             color: "RED"
-        },
-        authoritativePerms: [
+          },
+          authoritativePerms: [
             "ADMINISTRATOR",
             "KICK_MEMBERS",
             "BAN_MEMBERS"
-        ],
-        categories: [
+          ],
+          categories: [
             {
-                name: "Admin",
-                emoji: "emoji ID",
-                custom: true,
-                hidden: true
+              name: "Admin",
+              emoji: "emoji ID",
+              custom: true,
+              hidden: true
             },
             {
-                name: "Configuration",
-                emoji: "🔨",
-                custom: false,
-                hidden: false
+              name: "Configuration",
+              emoji: "🔨",
+              custom: false,
+              hidden: false
             }
-        ]
-    })
+          ]
+        })
 
-    // It set the "defaultLanguage". Must be string
-    .setDefaultLanguage("en")
+        // It set the "defaultLanguage". Must be string
+        .setDefaultLanguage("en")
 
-    // It set the "defaultPrefix". Must be string
-    .setDefaultPrefix("$")
+        // It set the "defaultPrefix". Must be string
+        .setDefaultPrefix("$")
 
-    // It set the "disableDefaultCommands". Must be array
-    .setDisableDefaultCommands([
-        // 'blacklist',
-        // 'channel',
-        // 'command',
-        // 'help',
-        // 'language',
-        // 'prefix',
-        // 'required-roles',
-        // 'stats'
-    ])
+        // It set the "mongoURI". Must be string
+        .setMongoURI("YOUR MONGODB CONNECTION URI")
 
-    // It set the "commandsDir". Must be string
-    .setCommandsDir("commands")
-
-    // It set the "mongoURI". Must be string
-    .setMongoURI("YOUR MONGODB CONNECTION URI")
-
-    // It set the "dbOptions". Must be object
-    .setDbOptions({
-        keepAlive: true,
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        useFindAndModify: false,
-    })
+        // It set the "dbOptions". Must be object
+        .setDbOptions({
+          keepAlive: true,
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+          useFindAndModify: false,
+        })
 ```
 
 # Commands
 
 ## Shortcuts
- - [Ping pong command example](#ping-pong-command-example)
+  - [Ping pong command example](#ping-pong-command-example)
   - [Command properties](#command-properties)
   - [Correct argument usage](#correct-argument-usage)
+  - [Command initialization](#command-initialization)
   - [Bot owners only command](#bot-owners-only-command)
   - [Test servers](#test-servers)
   - [Handling command errors](#handling-command-errors)
   - [Command cooldowns](#command-cooldowns)
   - [Required user and bot permissions](#required-user-and-bot-permissions)
   - [Command categories and help settings](#command-categories-and-help-settings)
-  - [Instance methods](#instance-methods)
+  - [Instance Methods](#instance-methods)
 
-## Ping pong command example
+## Ping-pong Command Example
 AdvancedHandler is easy to get setup and working. On this page you will learn how to create a simple "Ping -> Pong" command example. <br/>
 First you must setup AdvancedHandler in your main file:
 
@@ -299,9 +253,10 @@ module.exports = {
 ```
 After inviting your bot to a Discord server and running `!ping` ("!" is the default command prefix) within that server, your bot should reply with `Pong!`.
 
-## Command properties
+## Command Properties
 This page assumes you have a basic bot running using AdvancedHandler as seen [here](#ping-pong-command-example). <br/>
-There are many options you have when it comes to commands, all are optional aside from a callback function which could alternatively be named run or execute as well. <br/><br/>
+There are many options you have when it comes to commands, all are optional aside from a callback function which could alternatively be named run or execute as well. <br/>
+<br/>
 
 All commands are exported as objects who have properties to dictate the command's functionality. Here is a complete list of all current properties available to you:
 
@@ -328,10 +283,8 @@ module.exports = {
    "<test>",
    "[test_2]"
     ]
-   }
-   
-   
-
+   },
+  
     //If you want to customize the syntax error message. Its in the "Error Handling" part.
 
     // What Discord permissions the user needs to run the command.
@@ -362,6 +315,13 @@ module.exports = {
     // Forces this command to only be ran in guilds rather than DMs and guilds.
     guildOnly: false,
 
+    // This method is invoked only once whenever the command is registered
+    // "client" is the client object for your bot
+    // "instance" is your AdvancedHandler.CommandHandler instance
+    init: (client, instance) => {
+      console.log('ran only one time when the bot starts up')
+    },
+
     // The function that is invoked whenever the command is ran by a user.
     // This function can be called "run" or "execute" as well.
     // An object is passed in as an argument that provides additional data.
@@ -377,6 +337,7 @@ module.exports = {
     }) => {}
 }
 ```
+
 ## Correct argument usage
 You can specify the exact arguments and the minimum/maximum number of arguments for each command. If the user provides an incorrect number of arguments then CommandHandler will automatically tell them the correct usage based off of the command properties you provided. Here is an example: <br/>
 
@@ -526,23 +487,23 @@ CommandHandler sends an error message by default, however you might want to cust
 **Note: If you use "error" all default errors will disabled** <br/><br/>
 Here is a list of all command errors you can listen for:
 
-  | Name                   | info                             |
+| Name                   | info                             |
   | ---------------------- | -------------------------------- |
-  | GUILD_ONLY_COMMAND     | null                             |
-  | USER_IN_BLACKLIST      | message member                   |
-  | COMMAND_DISABLED       | command object                   |
-  | CHANNEL_DISABLED       | channel the message was sent     |
-  | TEST_ONLY              | message guild or "dm"            |
-  | BOT_OWNERS_ONLY        | message author                   |
-  | MISSING_ROLES          | commands all required roles list |
-  | MISSING_PERMISSION     | permissions the usser needed     |
-  | MISSING_BOT_PERMISSION | permissions the bot needed       |
-  | COOLDOWN               | cooldown finish date             |
-  | SYNTAX_ERROR           | command text                     |
-  
-  To listen to command errors you can pass an error function in your command object like so:
-  
-  ping.js 
+| GUILD_ONLY_COMMAND     | null                             |
+| USER_IN_BLACKLIST      | message member                   |
+| COMMAND_DISABLED       | command object                   |
+| CHANNEL_DISABLED       | channel the message was sent     |
+| TEST_ONLY              | message guild or "dm"            |
+| BOT_OWNERS_ONLY        | message author                   |
+| MISSING_ROLES          | commands all required roles list |
+| MISSING_PERMISSION     | permissions the usser needed     |
+| MISSING_BOT_PERMISSION | permissions the bot needed       |
+| COOLDOWN               | cooldown finish date             |
+| SYNTAX_ERROR           | command text                     |
+
+To listen to command errors you can pass an error function in your command object like so:
+
+ping.js
   ```js
   const { MessageEmbed } = require('discord.js')
 
@@ -561,13 +522,12 @@ module.exports = {
     if(error === "GUILD_ONLY_COMMAND") {
      return message.reply("This command can just run in a server!");
     }
-  } 
-
+   }
 }
   ```
- 
-  ## Command cooldowns
-  You can use command wait times to ensure that your commands are only run at frequent intervals. This is very useful for daily or weekly commands. There are three types of cooldowns in CommandHandler: Guild cooldowns are one system per guild. It waits even if the user doesn't use that command. User wait times are per user system. The user waits even if the server is different. But cooldown is for a server and the user on that server. User and guild must be the same for wait. 
+
+## Command cooldowns
+You can use command wait times to ensure that your commands are only run at frequent intervals. This is very useful for daily or weekly commands. There are three types of cooldowns in CommandHandler: Guild cooldowns are one system per guild. It waits even if the user doesn't use that command. User wait times are per user system. The user waits even if the server is different. But cooldown is for a server and the user on that server. User and guild must be the same for wait.
 
 Each cooldown type requires a string for its duration and duration type (seconds, minutes, etc.).
 
@@ -612,7 +572,7 @@ module.exports = {
 }
 ```
 
-Example of per-guild cooldowns: 
+Example of per-guild cooldowns:
 
 rewards.js
 ```js
@@ -638,7 +598,7 @@ module.exports = {
 ```
 
 **You must have database for use this feature**
- 
+
 ## Required user and bot permissions
 You can only want your commands to be run by users with certain Discord permissions. This is usually useful for auditing tools, you just want your staff to be able to use this command.
 Using AdvancedHandler you can easily determine what Discord permissions your users and bot need to run the command:
@@ -692,7 +652,7 @@ module.exports = {
 ```
 
 ## Command categories and help settings
-For categories and other settings to display in the built-in help menu, you must specify them when starting AdvancedHandler. 
+For categories and other settings to display in the built-in help menu, you must specify them when starting AdvancedHandler.
 
 This can be done as follows:
 
@@ -759,32 +719,10 @@ client.on('ready', () => {
  })
 }
 ```
-
-## Instance methods
-
+## Instance Methods
 AdvancedHandler has many functions that will make your job easier. These methods make it easier to write your code.
 
 Here's All:
-
-### Shortcuts
-- [Message methods](#message-methods)
-  - [getMessage](#getmessage)
-  - [newSyntaxError](#newsyntaxerror)
-- [Language Methods](#language-methods)
-  - [setLanguage](#setlanguage)
-  - [getLanguage](#getlanguage)
-- [Prefix methods](#prefix-methods)
-  - [setPrefix](#setprefix)
-  - [getPrefix](#getprefix)
-- [Command methods](#command-methods)
-  - [isCommandHas](#iscommandhas)
-  - [getCommand](#getcommand)
-  - [isCommandDisabled](#iscommanddisabled)
-  - [isChannelDisabled](#ischanneldisabled)
-- [mongoDB methods](#mongodb-methods)
-  - [isDbConnected](#isdbconnected)
-  - [getDbConnectionURI](#getdbconnectionuri)
-
 
 ### Message methods
 
@@ -812,7 +750,7 @@ return message.reply(await instance.getMessage(guild, "TEST"));
  }
 }
 ```
-If you ran the `!test` in a server it will reply with "Just a test text!". If that server was configured to Turkish it will reply with "Sadece bir test metini!" instead. 
+If you ran the `!test` in a server it will reply with "Just a test text!". If that server was configured to Turkish it will reply with "Sadece bir test metini!" instead.
 
 You can set dynamic placeholders in your messages like so:
 
@@ -858,7 +796,7 @@ messages.json snippet
 }
 ```
 
-For get "DESCRIPTION" 
+For get "DESCRIPTION"
 
 ```js
 await instance.getMessage(guild, "HELP.TITLE", { 
@@ -866,19 +804,23 @@ await instance.getMessage(guild, "HELP.TITLE", {
 })
 ```
 
-#### newSyntaxError
+#### createSyntaxError
 This method will create new syntax error.
 
 example.js
 ```js
 module.exports = {
- expectedArgs: "<tag user>",
+ usage: {
+     params: [
+         "<tag user>"
+     ]
+ }
  callback: async ({ message, instance}) => {
   let user = message.mentions.users.first();
 
   if(!user) {
     // Command is the command name (example for this command)
-  return await instance.newSyntaxError(command, guild);
+  return await instance.createSyntaxError(message, commandName, 0, "REQUIRED_PARAM");
   } else {
     return message.reply(`You tag thi guy "${user}".`)
   }
@@ -969,7 +911,7 @@ instance.getDbConnectionURI()
 ```
 
 # Features
-A "feature" within AdvancedHandler is a normal feature within your bot. This could be a "reaction roles" system, or a "welcome message" system. A feature could include multiple event listeners and other logic to handle how your bot works. AdvancedHandler makes it easy to register features by adding them to a features folder. 
+A "feature" within AdvancedHandler is a normal feature within your bot. This could be a "reaction roles" system, or a "welcome message" system. A feature could include multiple event listeners and other logic to handle how your bot works. AdvancedHandler makes it easy to register features by adding them to a features folder.
 
 The folder name can be specified when initializing AdvancedHandler like so:
 
@@ -989,7 +931,7 @@ client.login("YOUR TOKEN");
 
 You can then create a "features" folder and all of your features can be placed in that folder. These files will be automatically imported and ran and it is assumed that these files will export a function like so:
 
-welcome-message.js 
+welcome-message.js
 ```js
 module.exports = (client) => {
   // Listen for new members joining a guild
@@ -1014,7 +956,7 @@ module.exports = (client) => {
 ```
 This feature will be automatically ran and it's exported function will be invoked. This way you can easily register listeners and handle each of your feature's.
 
-# Built-in Commands And Features
+# Built-in Commands and Features
 
 ## Shortcuts
 - [Seting removing and cleaning blacklist](#seting-removing-and-cleaning-blacklist)
@@ -1029,9 +971,9 @@ This feature will be automatically ran and it's exported function will be invoke
 - [Help](#help)
 - [Server stats](#server-stats)
 - [Custom events](#custom-events)
-  
 
-## Seting removing and cleaning blacklist 
+
+## Seting removing and cleaning blacklist
 Advancedhandler comes with the ability for bot owner(s) make some users can or not use the bot's commands. Also this command can clean the the all blacklist. They can do this easily with the following command:
 
 (For use this command you should specified the bot owner(s). If you don't specified the bot owner(s) command can't be used.)
@@ -1041,12 +983,12 @@ Advancedhandler comes with the ability for bot owner(s) make some users can or n
 ## Enabling and disabling commands
 AdvancedHandler comes with the ability for server owners using your bot to enable or disable commands within their server/guild. They can do this easily with the following command:
 
-```!command <enable | disable> <command>```
+```!command <enable | disable | clean> [command]```
 
 ## Configurable required roles
 Server/guild owners can configure what roles are required to use specific commands. This is not done through IDs or role names as those will vary between each guild. Instead each server owner can run a command to specify what role is required or unrequired to use a command like so:
 
-```!required-roles <add | remove> <command> <role id | mention role>```
+```!required-roles <add | remove | clean> [command] [role id | mention role]```
 
 If you use the "remove" option it will make the role unrequired
 
@@ -1113,7 +1055,7 @@ You can find the default messages.json [here](https://github.com/OzguYalcin/Adva
 
 You will also need to define where your messages.json file lives in the AdvancedHandler constructor like so:
 
-index.js 
+index.js
 ```js
 // Assumes messages.json is in the same directory as this code's file
 new AdvancedHandler.CommandHandler(client, {
@@ -1132,9 +1074,9 @@ messages.json snippet
         "tr": "Yanlış kullanım! Lütfen \"{PREFIX}{COMMAND} {ARGUMENTS}\" kullanın."
     }
 ```
- The {PREFIX}, {COMMAND} and {ARGUMENTS} must always be in upper case. These will be replaced with the correct content when an error occurs. The {ARGUMENTS} variable must be specified in the command like so:
+The {PREFIX}, {COMMAND} and {ARGUMENTS} must always be in upper case. These will be replaced with the correct content when an error occurs. The {ARGUMENTS} variable must be specified in the command like so:
 
- ping.js 
+ping.js
  ```js
  ping.js
 module.exports = {
@@ -1146,19 +1088,19 @@ module.exports = {
   }
 }
  ```
- A per-command syntax error message will always overwrite a global one for that specific command.
+A per-command syntax error message will always overwrite a global one for that specific command.
 
 ## Customizable channel specific commands
- Server owners using your bot can set some commands or all to only be ran in specific channels within their server. They can do this with the following:
+Server owners using your bot can set some commands or all to only be ran in specific channels within their server. They can do this with the following:
 `!channel <enable | disable> <command | all> <tag channel | tag channels>`
 If a user attempts to use a command in the wrong channel then they will be told what channels they are allowed to use.
 
 ## Help
-Allows users to see which commands the bot has and detailed information about these commands. 
+Allows users to see which commands the bot has and detailed information about these commands.
 
 If ran `!help` it show the categories and the all commands. But if ran `!help [command]` show the commands detail information.
 
-## Server stats 
+## Server stats
 It allows users and server/guild owners to see server/guild statistics. There are three types of counters: "all-members", "members" and "bots". This feature can be turned off. They can do this with the following:
 
 `!stats <on | off>`
@@ -1192,7 +1134,7 @@ client.login("YOUR TOKEN HERE")
 ### commandException Event
 This event is fired whenever an exception occurs within one of your commands. You can use this information to log error details or provide a meaningful message to the user.
 
-index.js 
+index.js
 ```js
 const DiscordJS = require('discord.js')
 const { CommandHandler } = require('advancedhandler')

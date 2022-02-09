@@ -4,9 +4,9 @@ module.exports = {
         maxArgs: 3,
         minArgs: 2  ,
         params: [
-            "[enable | disable]",
-            "[command | all]",
-            "<tag channel | tag channels>"
+            "<enable | disable>",
+            "<command | all>",
+            "[tag channel | tag channels]"
         ]
     },
     guildOnly: true,
@@ -49,7 +49,7 @@ module.exports = {
 
                         await ChannelSchema.findOneAndUpdate(
                             {
-                                guildID: guild.id,
+                                guildId: guild.id,
                                 command: co.name ? co.name : co.secondName
                             }, {
                             $pull: {
@@ -79,7 +79,7 @@ module.exports = {
 
                     await ChannelSchema.findOneAndUpdate(
                         {
-                            guildID: guild.id,
+                            guildId: guild.id,
                             command: command.name
                         }, {
                         $pull: {
@@ -110,7 +110,7 @@ module.exports = {
                         // }
                         await ChannelSchema.findOneAndUpdate(
                             {
-                                guildID: guild.id,
+                                guildId: guild.id,
                                 command: co.name ? co.name : co.secondName
                             }, {
                             $addToSet: {
@@ -141,7 +141,7 @@ module.exports = {
 
                     await ChannelSchema.findOneAndUpdate(
                         {
-                            guildID: guild.id,
+                            guildId: guild.id,
                             command: command.name
                         }, {
                         $addToSet: {

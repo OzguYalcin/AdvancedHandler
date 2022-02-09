@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const Schema = new mongoose.Schema({
-    guildID: {
+    guildId: {
         type: String,
         required: true
     },
@@ -11,4 +11,4 @@ const Schema = new mongoose.Schema({
     }
 })
 
-module.exports = new mongoose.model('advancedhandler-command', Schema);
+module.exports = new mongoose.model('advancedhandler-disable-commands', Schema);

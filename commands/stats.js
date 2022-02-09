@@ -5,7 +5,7 @@ module.exports = {
         minArgs: 1,
         maxArgs: 1,
         params: [
-            "[on | off]"
+            "<on | off>"
         ]
     },
     category: "Statistics",
